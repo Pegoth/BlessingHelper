@@ -15,9 +15,9 @@ BlessingHelper = {
         "Blessing of Kings",
         "Blessing of Wisdom",
         "Blessing of Might",
-        "Blessing of Sanctuary",
+        "Blessing of Light",
         "Blessing of Salvation",
-        "Blessing of Light"
+        "Blessing of Sanctuary"
     }
 }
 
@@ -44,7 +44,241 @@ setDefault("unbuffedColor", {1, 0, 0})
 setDefault("outOfRangeColor", {0.1, 0.1, 0.1})
 setDefault("isLocked", false)
 setDefault("spells", {
-    useGreater = true
+    useGreater = true,
+    Warrior = {
+        ["Blessing of Salvation"] = {
+            enabled = true,
+            priority = 5,
+        },
+        ["Blessing of Sanctuary"] = {
+            enabled = true,
+            priority = 6,
+        },
+        ["Blessing of Light"] = {
+            enabled = true,
+            priority = 4,
+        },
+        ["Blessing of Might"] = {
+            enabled = true,
+            priority = 3,
+        },
+        ["Blessing of Wisdom"] = {
+            enabled = true,
+            priority = 2,
+        },
+        ["Blessing of Kings"] = {
+            enabled = true,
+            priority = 1,
+        },
+    },
+    Paladin = {
+        ["Blessing of Salvation"] = {
+            enabled = true,
+            priority = 5,
+        },
+        ["Blessing of Sanctuary"] = {
+            enabled = true,
+            priority = 6,
+        },
+        ["Blessing of Light"] = {
+            enabled = true,
+            priority = 4,
+        },
+        ["Blessing of Might"] = {
+            enabled = true,
+            priority = 3,
+        },
+        ["Blessing of Wisdom"] = {
+            enabled = true,
+            priority = 2,
+        },
+        ["Blessing of Kings"] = {
+            enabled = true,
+            priority = 1,
+        },
+    },
+    Shaman = {
+        ["Blessing of Salvation"] = {
+            enabled = true,
+            priority = 5,
+        },
+        ["Blessing of Sanctuary"] = {
+            enabled = true,
+            priority = 6,
+        },
+        ["Blessing of Light"] = {
+            enabled = true,
+            priority = 4,
+        },
+        ["Blessing of Might"] = {
+            enabled = true,
+            priority = 3,
+        },
+        ["Blessing of Wisdom"] = {
+            enabled = true,
+            priority = 2,
+        },
+        ["Blessing of Kings"] = {
+            enabled = true,
+            priority = 1,
+        },
+    },
+    Rogue = {
+        ["Blessing of Salvation"] = {
+            enabled = true,
+            priority = 5,
+        },
+        ["Blessing of Sanctuary"] = {
+            enabled = true,
+            priority = 6,
+        },
+        ["Blessing of Light"] = {
+            enabled = true,
+            priority = 4,
+        },
+        ["Blessing of Might"] = {
+            enabled = true,
+            priority = 3,
+        },
+        ["Blessing of Wisdom"] = {
+            enabled = true,
+            priority = 2,
+        },
+        ["Blessing of Kings"] = {
+            enabled = true,
+            priority = 1,
+        },
+    },
+    Mage = {
+        ["Blessing of Salvation"] = {
+            enabled = true,
+            priority = 5,
+        },
+        ["Blessing of Sanctuary"] = {
+            enabled = true,
+            priority = 6,
+        },
+        ["Blessing of Light"] = {
+            enabled = true,
+            priority = 4,
+        },
+        ["Blessing of Might"] = {
+            enabled = true,
+            priority = 3,
+        },
+        ["Blessing of Wisdom"] = {
+            enabled = true,
+            priority = 2,
+        },
+        ["Blessing of Kings"] = {
+            enabled = true,
+            priority = 1,
+        },
+    },
+    Druid = {
+        ["Blessing of Salvation"] = {
+            enabled = true,
+            priority = 5,
+        },
+        ["Blessing of Sanctuary"] = {
+            enabled = true,
+            priority = 6,
+        },
+        ["Blessing of Might"] = {
+            enabled = true,
+            priority = 3,
+        },
+        ["Blessing of Kings"] = {
+            enabled = true,
+            priority = 1,
+        },
+        ["Blessing of Wisdom"] = {
+            enabled = true,
+            priority = 2,
+        },
+        ["Blessing of Light"] = {
+            enabled = true,
+            priority = 4,
+        },
+    },
+    Priest = {
+        ["Blessing of Salvation"] = {
+            enabled = true,
+            priority = 5,
+        },
+        ["Blessing of Sanctuary"] = {
+            enabled = true,
+            priority = 6,
+        },
+        ["Blessing of Light"] = {
+            enabled = true,
+            priority = 4,
+        },
+        ["Blessing of Might"] = {
+            enabled = true,
+            priority = 3,
+        },
+        ["Blessing of Wisdom"] = {
+            enabled = true,
+            priority = 2,
+        },
+        ["Blessing of Kings"] = {
+            enabled = true,
+            priority = 1,
+        },
+    },
+    Hunter = {
+        ["Blessing of Salvation"] = {
+            enabled = true,
+            priority = 5,
+        },
+        ["Blessing of Sanctuary"] = {
+            enabled = true,
+            priority = 6,
+        },
+        ["Blessing of Kings"] = {
+            enabled = true,
+            priority = 1,
+        },
+        ["Blessing of Might"] = {
+            enabled = true,
+            priority = 3,
+        },
+        ["Blessing of Light"] = {
+            enabled = true,
+            priority = 4,
+        },
+        ["Blessing of Wisdom"] = {
+            enabled = true,
+            priority = 2,
+        },
+    },
+    Warlock = {
+        ["Blessing of Salvation"] = {
+            enabled = true,
+            priority = 5,
+        },
+        ["Blessing of Sanctuary"] = {
+            enabled = true,
+            priority = 6,
+        },
+        ["Blessing of Light"] = {
+            enabled = true,
+            priority = 4,
+        },
+        ["Blessing of Might"] = {
+            enabled = true,
+            priority = 3,
+        },
+        ["Blessing of Wisdom"] = {
+            enabled = true,
+            priority = 2,
+        },
+        ["Blessing of Kings"] = {
+            enabled = true,
+            priority = 1,
+        },
+    }
 })
 
 -- Limit name length?

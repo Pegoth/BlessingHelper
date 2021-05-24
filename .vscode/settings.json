@@ -13,6 +13,7 @@
         "IsInGroup",
         "UnitInRaid",
         "InCombatLockdown",
-        "InfinitySearch"
+        "InfinitySearch",
+        "UnitClass"
     ]
 }

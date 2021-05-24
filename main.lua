@@ -39,13 +39,8 @@ function BlessingHelper.SetSpell(class, spell, enabled, priority)
         BlessingHelperConfig.spells[class][spell] = {}
     end
 
-    if enabled ~= nil then
-        BlessingHelperConfig.spells[class][spell].enabled = enabled
-    end
-
-    if priority ~= nil then
-        BlessingHelperConfig.spells[class][spell].priority = priority
-    end
+    BlessingHelperConfig.spells[class][spell].enabled = enabled
+    BlessingHelperConfig.spells[class][spell].priority = priority
 end
 -- endregion
 
@@ -265,28 +260,55 @@ for i, class in ipairs(BlessingHelper.Classes) do
         args[blessing] = {
             name = blessing,
             type = "group",
-            order = j,
+            inline = true,
+            order = select(2, BlessingHelper.GetSpell(class, blessing, nil, j)),
             args = {
                 enabled = {
                     name = "Enabled",
+                    desc = "Whether the buff is allowed or not for this class.",
                     type = "toggle",
                     order = 1,
                     set = function (_, value)
-                        BlessingHelper.SetSpell(class, blessing, value)
+                        local _, p = BlessingHelper.GetSpell(class, blessing, true, j)
+                        BlessingHelper.SetSpell(class, blessing, value, p)
                     end,
-                    get = function () return BlessingHelper.GetSpell(class, blessing, false) end
+                    get = function () return BlessingHelper.GetSpell(class, blessing, true) end
                 },
                 priority = {
                     name = "Priority",
+                    desc = "The priority of the buff, lower number means it will be sooner selected to be cast on the class.",
                     type = "range",
                     step = 1,
                     min = 1,
                     max = #BlessingHelper.Blessings,
                     order = 2,
                     set = function (_, value)
-                        BlessingHelper.SetSpell(class, blessing, nil, value)
+                        local e, _ = BlessingHelper.GetSpell(class, blessing, true, j)
+                        BlessingHelper.SetSpell(class, blessing, e, value)
                     end,
                     get = function () return select(2, BlessingHelper.GetSpell(class, blessing, nil, j)) end
+                },
+                up = {
+                    name = "Up",
+                    type = "execute",
+                    order = 3,
+                    func = function ()
+                        local e, p = BlessingHelper.GetSpell(class, blessing, true, j)
+                        if p > 1 then
+                            BlessingHelper.SetSpell(class, blessing, e, p - 1)
+                        end
+                    end
+                },
+                down = {
+                    name = "Down",
+                    type = "execute",
+                    order = 4,
+                    func = function ()
+                        local e, p = BlessingHelper.GetSpell(class, blessing, true, j)
+                        if p < 6 then
+                            BlessingHelper.SetSpell(class, blessing, e, p + 1)
+                        end
+                    end
                 }
             }
         }
@@ -295,7 +317,6 @@ for i, class in ipairs(BlessingHelper.Classes) do
     config.args.spells.args[class] = {
         name = class,
         type = "group",
-        inline = true,
         order = 1 + i,
         args = args
     }
