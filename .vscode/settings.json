@@ -11,6 +11,8 @@
         "UnitBuff",
         "GetTime",
         "IsInGroup",
-        "UnitInRaid"
+        "UnitInRaid",
+        "InCombatLockdown",
+        "InfinitySearch"
     ]
 }

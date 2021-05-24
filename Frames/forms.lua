@@ -27,6 +27,11 @@ function BlessingHelperFrame_OnLoad(self)
 
     self.isMoving = false
 
+    function self:ToggleLock()
+        self:SetLock(not BlessingHelperConfig.isLocked)
+        self:Redraw()
+    end
+
     function self:SetLock(locked)
         BlessingHelperConfig.isLocked = locked
 
@@ -35,16 +40,12 @@ function BlessingHelperFrame_OnLoad(self)
         else
             self:EnableMouse(true)
         end
-        
+
         self:Redraw()
     end
 
-    function self:ToggleLock()
-        self:SetLock(not BlessingHelperConfig.isLocked)
-    end
-
     function self:Redraw()
-        -- TODO: Check for combat lockdown
+        if InCombatLockdown() then return end
 
         local group = IsInGroup()
         local raid = group and UnitInRaid("player") or false
@@ -52,13 +53,15 @@ function BlessingHelperFrame_OnLoad(self)
         local x = BlessingHelperConfig.horizontalPadding * 2
         local y = BlessingHelperConfig.verticalPadding * 2
         local max = group and (raid and 40 or 5) or 1
+        local visibleCount = 0
         for i = 1, 40 do
             local f = self.Units[i]
-            local unit = group and (raid and "raid"..i or "party"..i) or "player"
+            local unit = group and (raid and "raid"..i or (i == 1 and "player" or "party"..(i-1))) or "player"
 
-            if i > max then
+            if i > max or not UnitExists(unit) then
                 f:Hide()
             else
+                visibleCount = visibleCount + 1
                 f:Show()
                 f.Unit = unit
                 f:SetAttribute("unit", unit)
@@ -79,8 +82,8 @@ function BlessingHelperFrame_OnLoad(self)
         end
 
         self.Background:SetColorTexture(BlessingHelperConfig.backgroundColor[1], BlessingHelperConfig.backgroundColor[2], BlessingHelperConfig.backgroundColor[3], BlessingHelperConfig.backgroundColor[4])
-        self:SetWidth(BlessingHelperConfig.horizontalPadding * 2 + (BlessingHelperConfig.unitWidth + BlessingHelperConfig.horizontalPadding) * (BlessingHelperConfig.isLocked and math.ceil(max / 10) or 4))
-        self:SetHeight(BlessingHelperConfig.verticalPadding * 2 + (BlessingHelperConfig.unitHeight + BlessingHelperConfig.verticalPadding) * (BlessingHelperConfig.isLocked and (math.min(max, 10)) or 10))
+        self:SetWidth(BlessingHelperConfig.horizontalPadding * 2 + (BlessingHelperConfig.unitWidth + BlessingHelperConfig.horizontalPadding) * (BlessingHelperConfig.isLocked and math.ceil(visibleCount / 10) or 4))
+        self:SetHeight(BlessingHelperConfig.verticalPadding * 2 + (BlessingHelperConfig.unitHeight + BlessingHelperConfig.verticalPadding) * (BlessingHelperConfig.isLocked and (math.min(visibleCount, 10)) or 10))
         self.Background:SetWidth(self:GetWidth())
         self.Background:SetHeight(self:GetHeight())
     end
@@ -102,8 +105,6 @@ function BlessingHelperFrame_OnMouseDown(self, button)
             self:StartMoving()
             self.isMoving = true
         end
-    else
-        self:ToggleLock()
     end
 end
 

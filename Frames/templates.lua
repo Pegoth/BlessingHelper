@@ -33,8 +33,6 @@ function BlessingHelperUnitTemplate_OnLoad(self)
         self.Name:SetPoint("LEFT", self, "LEFT", BlessingHelperConfig.unitHeight + 2, 0)
         self.Name:SetFont(media:Fetch("font", BlessingHelperConfig.unitFont), BlessingHelperConfig.unitFontSize)
         self.Duration:SetFont(media:Fetch("font", BlessingHelperConfig.durationFont), BlessingHelperConfig.durationFontSize)
-        self.Name:SetText(self.Unit or "unknown")
-        self.Duration:SetText("00:00")
     end
 
     self:Redraw()
@@ -51,7 +49,7 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
             self.Icon:Hide()
             self.Name:SetText(self.Unit or "unknown")
             self.Duration:SetText("00:00")
-            self:SetBackdropColor(0.4, 0.4, 0.4, 1)
+            self:SetBackdropColor(0, 0, 0, 1)
             return
         end
 
@@ -60,7 +58,7 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
         if not IsSpellInRange("Blessing of Wisdom", self.Unit) then
             self.Icon:Hide()
             self.Duration:SetText("00:00")
-            self:SetBackdropColor(0.7, 0.7, 0.7, 1)
+            self:SetBackdropColor(BlessingHelperConfig.outOfRangeColor[1], BlessingHelperConfig.outOfRangeColor[2], BlessingHelperConfig.outOfRangeColor[3], 1)
             return
         end
 
@@ -68,7 +66,7 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
         if #blessings == 0 then
             -- TODO: Decide what to cast, for now leave it to cast the last used
             self.Duration:SetText("00:00")
-            self:SetBackdropColor(1, 0, 0, 1)
+            self:SetBackdropColor(BlessingHelperConfig.unbuffedColor[1], BlessingHelperConfig.unbuffedColor[2], BlessingHelperConfig.unbuffedColor[3], 1)
             return
         end
 
@@ -87,7 +85,7 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
         self.Icon:Show()
         self.Icon:SetTexture(smallest.icon)
         self.Duration:SetText(string.format("%02.0f:%02.0f", m, s == 60 and 0 or s))
-        self:SetBackdropColor(0, 1, 0, 1)
+        self:SetBackdropColor(BlessingHelperConfig.buffedColor[1], BlessingHelperConfig.buffedColor[2], BlessingHelperConfig.buffedColor[3], 1)
     end
 end
 -- endregion
