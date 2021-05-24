@@ -22,4 +22,4 @@ setDefault("backgroundColor", {0, 0, 0, 0.5})
 setDefault("isLocked", false)
 
 
--- Checkbox for isLocked? show fake frames when not locked?
+-- Limit name length?

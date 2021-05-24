@@ -4,6 +4,13 @@
         "LibStub",
         "CreateFrame",
         "BlessingHelperFrame",
-        "C_Map"
+        "C_Map",
+        "UnitExists",
+        "UnitName",
+        "IsSpellInRange",
+        "UnitBuff",
+        "GetTime",
+        "IsInGroup",
+        "UnitInRaid"
     ]
 }

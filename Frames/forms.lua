@@ -46,8 +46,8 @@ function BlessingHelperFrame_OnLoad(self)
     function self:Redraw()
         -- TODO: Check for combat lockdown
 
-        local raid = false--UnitInRaid("player")
-        local group = true--IsInGroup()
+        local group = IsInGroup()
+        local raid = group and UnitInRaid("player") or false
 
         local x = BlessingHelperConfig.horizontalPadding * 2
         local y = BlessingHelperConfig.verticalPadding * 2
@@ -80,7 +80,7 @@ function BlessingHelperFrame_OnLoad(self)
 
         self.Background:SetColorTexture(BlessingHelperConfig.backgroundColor[1], BlessingHelperConfig.backgroundColor[2], BlessingHelperConfig.backgroundColor[3], BlessingHelperConfig.backgroundColor[4])
         self:SetWidth(BlessingHelperConfig.horizontalPadding * 2 + (BlessingHelperConfig.unitWidth + BlessingHelperConfig.horizontalPadding) * (BlessingHelperConfig.isLocked and math.ceil(max / 10) or 4))
-        self:SetHeight(BlessingHelperConfig.verticalPadding * 2 + (BlessingHelperConfig.unitHeight + BlessingHelperConfig.verticalPadding) * (BlessingHelperConfig.isLocked and (max <= 5 and 5 or 10) or 10))
+        self:SetHeight(BlessingHelperConfig.verticalPadding * 2 + (BlessingHelperConfig.unitHeight + BlessingHelperConfig.verticalPadding) * (BlessingHelperConfig.isLocked and (math.min(max, 10)) or 10))
         self.Background:SetWidth(self:GetWidth())
         self.Background:SetHeight(self:GetHeight())
     end
@@ -89,7 +89,7 @@ function BlessingHelperFrame_OnLoad(self)
     self.Units = {}
 
     for i = 1, 40 do
-        self.Units[i] = CreateFrame("frame", nil, self, "BlessingHelperUnitTemplate")
+        self.Units[i] = CreateFrame("button", nil, self, "BlessingHelperUnitTemplate")
         self.Units[i].Index = i
     end
 
