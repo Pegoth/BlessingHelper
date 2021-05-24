@@ -1,0 +1,7 @@
+## Interface: 20501
+
+## Title: BlessingHelper
+## Author: Pegoth
+## SavedVariables: BlessingHelperConfig
+
+loader.xml

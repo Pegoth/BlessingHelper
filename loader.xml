@@ -1,0 +1,17 @@
+<Ui>
+    <!-- Load libs -->
+    <Script file="libs\LibStub\LibStub.lua"/>
+    <Include file="libs\CallbackHandler-1.0\CallbackHandler-1.0.xml"/>
+    <Include file="libs\AceGUI-3.0\AceGUI-3.0.xml"/>
+    <Include file="libs\AceConfig-3.0\AceConfig-3.0.xml"/>
+    <Include file="libs\LibSharedMedia-3.0\LibSharedMedia-3.0.xml"/>
+    <Include file="libs\AceGUI-3.0-SharedMediaWidgets\AceGUI-3.0-SharedMediaWidgets.xml"/>
+
+    <!-- Load addon files -->
+    <Script file="init.lua"/>
+    <Script file="main.lua"/>
+    <Script file="Frames\templates.lua"/>
+    <Include file="Frames\templates.xml" />
+    <Script file="Frames\forms.lua"/>
+    <Include file="Frames\forms.xml" />
+</Ui>

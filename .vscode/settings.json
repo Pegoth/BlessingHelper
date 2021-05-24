@@ -1,0 +1,9 @@
+{
+    "Lua.diagnostics.globals": [
+        "bit",
+        "LibStub",
+        "CreateFrame",
+        "BlessingHelperFrame",
+        "C_Map"
+    ]
+}
