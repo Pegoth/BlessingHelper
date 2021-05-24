@@ -24,6 +24,7 @@
         <Attributes>
             <Attribute name="type1" value="spell"/>
             <Attribute name="type2" value="spell"/>
+            <Attribute name="type3" value="target"/>
         </Attributes>
     </Button>
 </Ui>
