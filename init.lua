@@ -5,12 +5,12 @@ BlessingHelper = LibStub("AceAddon-3.0"):NewAddon(addon)
 function BlessingHelper:OnInitialize()
     self:SetupConstants()
     self:SetupDB()
-    self.SetupConfig()
-    self.SetupInfinitySearch()
+    self:SetupConfig()
+    self:SetupInfinitySearch()
 end
 
 function BlessingHelper:OnEnable()
-    self.SetupFrame()
+    self:SetupFrame()
 end
 
 function BlessingHelper:SetupConstants()
@@ -58,6 +58,11 @@ function BlessingHelper:SetupConstants()
         "Blessing of Sanctuary"
     }
     self.RangeCheckSpell = "Blessing of Wisdom"
+
+    self.NumUnitIds = 0
+    for _, unitid in ipairs(self.UnitIds) do
+        self.NumUnitIds = self.NumUnitIds + (unitid.max or 1)
+    end
 end
 
 function BlessingHelper:SetupDB()
@@ -314,12 +319,12 @@ function BlessingHelper:SetupConfig()
     for i, class in ipairs(BlessingHelper.Classes) do
         local args = {}
 
-        for j, blessing in ipairs(BlessingHelper.Blessings) do
+        for _, blessing in ipairs(BlessingHelper.Blessings) do
             args[blessing] = {
                 name = blessing,
                 type = "group",
                 inline = true,
-                order = select(2, BlessingHelper.GetSpell(class, blessing, nil, j)),
+                order = self.db.profile.spells[class][blessing].priority,
                 args = {
                     enabled = {
                         name = "Enabled",
@@ -405,6 +410,19 @@ end
 
 function BlessingHelper:SetupFrame()
     self.Frame = CreateFrame("frame", nil, UIParent, "BlessingHelperFrameTemplate")
+end
+
+function BlessingHelper.CreateBackdrop(frame, r, g, b, a)
+    frame:SetBackdrop({
+        bgFile = "Interface\\Addons\\"..addon.."\\Textures\\Background",
+        insets = {
+            left = 0,
+            top = 0,
+            right = 0,
+            bottom = 0
+        }
+    })
+    frame:SetBackdropColor(r, g, b, a)
 end
 
 -- Limit name length?
