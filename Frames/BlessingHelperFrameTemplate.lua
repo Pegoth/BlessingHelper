@@ -17,7 +17,6 @@ function BlessingHelperFrameTemplate_OnLoad(self)
 
     function self:ToggleLock()
         self:SetLock(not BlessingHelper.db.profile.isLocked)
-        self:Redraw()
     end
 
     function self:SetLock(locked)

@@ -146,45 +146,37 @@ function BlessingHelper:SetupConfig()
                 type = "group",
                 order = 3,
                 args = {
-                    normal = {
-                        name = "Normal",
-                        type = "group",
-                        inline = true,
+                    backgroundColor = {
+                        name = "Background color",
+                        desc = "The color of the background.",
+                        type = "color",
+                        hasAlpha = true,
                         order = 1,
-                        args = {
-                            backgroundColor = {
-                                name = "Background color",
-                                desc = "The color of the background.",
-                                type = "color",
-                                hasAlpha = true,
-                                order = 2,
-                                set = function (_, ...)
-                                    self.db.profile.backgroundColor = {...}
-                                    self.Frame.Background:SetColorTexture(...)
-                                end,
-                                get = function () return self.db.profile.backgroundColor[1], self.db.profile.backgroundColor[2], self.db.profile.backgroundColor[3], self.db.profile.backgroundColor[4] end
-                            },
-                            maximumRows = {
-                                name = "Maximum rows",
-                                desc = "The maximum amount of units to display in a column.",
-                                type = "range",
-                                step = 1,
-                                min = 1,
-                                max = BlessingHelper.NumUnitIds,
-                                order = 3,
-                                set = function (_, value)
-                                    self.db.profile.maximumRows = value
-                                    self.Frame:Redraw()
-                                end,
-                                get = function () return self.db.profile.maximumRows end
-                            }
-                        }
+                        set = function (_, ...)
+                            self.db.profile.backgroundColor = {...}
+                            self.Frame.Background:SetColorTexture(...)
+                        end,
+                        get = function () return self.db.profile.backgroundColor[1], self.db.profile.backgroundColor[2], self.db.profile.backgroundColor[3], self.db.profile.backgroundColor[4] end
+                    },
+                    maximumRows = {
+                        name = "Maximum rows",
+                        desc = "The maximum amount of units to display in a column.",
+                        type = "range",
+                        step = 1,
+                        min = 1,
+                        max = BlessingHelper.NumUnitIds,
+                        order = 2,
+                        set = function (_, value)
+                            self.db.profile.maximumRows = value
+                            self.Frame:Redraw()
+                        end,
+                        get = function () return self.db.profile.maximumRows end
                     },
                     special = {
                         name = "Special",
                         type = "group",
                         inline = true,
-                        order = 2,
+                        order = 3,
                         args = {
                             resetPosition = {
                                 name = "Reset position",
@@ -421,6 +413,25 @@ function BlessingHelper:SetupConfig()
                         order = 1,
                         set = function (_, value) self.db.profile.spells.useGreater = value end,
                         get = function () return self.db.profile.spells.useGreater end
+                    },
+                    special = {
+                        name = "Special",
+                        type = "group",
+                        inline = true,
+                        order = 2,
+                        args = {
+                            resetPosition = {
+                                name = "Reset",
+                                desc = "Resets the settings of the spells/classes to their default.",
+                                type = "execute",
+                                order = 1,
+                                func = function ()
+                                    local useGreater = self.db.profile.spells.useGreater
+                                    wipe(self.db.profile.spells)
+                                    self.db.profile.spells.useGreater = useGreater
+                                end
+                            }
+                        }
                     }
                 }
             }
@@ -498,11 +509,23 @@ end
 
 function BlessingHelper:SetupInfinitySearch()
     if InfinitySearch ~= nil then
+        local aceConfigRegistry = LibStub("AceConfigRegistry-3.0")
+
         InfinitySearch:RegisterAddonFunction("Extras: "..addon, "Options", nil, function ()
             LibStub("AceConfigDialog-3.0"):Open(addon)
         end)
         InfinitySearch:RegisterAddonFunction("Extras: "..addon, "Lock", nil, function ()
             self.Frame:ToggleLock()
+            aceConfigRegistry:NotifyChange(addon)
+        end)
+        InfinitySearch:RegisterAddonFunction("Extras: "..addon, "Toggle", nil, function ()
+            self.db.profile.enabled = not self.db.profile.enabled
+            if self.db.profile.enabled then
+                self.Frame:Show()
+            else
+                self.Frame:Hide()
+            end
+            aceConfigRegistry:NotifyChange(addon)
         end)
 
         if self.InfinitySearchSetupFrame then
