@@ -83,6 +83,7 @@ function BlessingHelper:SetupDB()
             durationFontSize = 12,
             buffedColor = {0, 1, 0},
             unbuffedColor = {1, 0, 0},
+            unbuffedPetColor = {0.5, 0, 0},
             outOfRangeColor = {0.1, 0.1, 0.1},
             spells = {
                 useGreater = true,
@@ -349,7 +350,7 @@ function BlessingHelper:SetupConfig()
                             },
                             unbuffedColor = {
                                 name = "Unbuffed color",
-                                desc = "Color of units  that are not buffed and in range.",
+                                desc = "Color of units that are not buffed and in range.",
                                 type = "color",
                                 hasAlpha = false,
                                 order = 2,
@@ -359,12 +360,24 @@ function BlessingHelper:SetupConfig()
                                 end,
                                 get = function () return self.db.profile.unbuffedColor[1], self.db.profile.unbuffedColor[2], self.db.profile.unbuffedColor[3] end
                             },
+                            unbuffedPetColor = {
+                                name = "Unbuffed pet color",
+                                desc = "Color of pet units that are not buffed and in range.",
+                                type = "color",
+                                hasAlpha = false,
+                                order = 3,
+                                set = function (_, ...)
+                                    self.db.profile.unbuffedPetColor = {...}
+                                    self.Frame:Redraw()
+                                end,
+                                get = function () return self.db.profile.unbuffedPetColor[1], self.db.profile.unbuffedPetColor[2], self.db.profile.unbuffedPetColor[3] end
+                            },
                             outOfRangeColor = {
                                 name = "Out of range color",
                                 desc = "Color of units that are out of range.",
                                 type = "color",
                                 hasAlpha = false,
-                                order = 3,
+                                order = 4,
                                 set = function (_, ...)
                                     self.db.profile.outOfRangeColor = {...}
                                     self.Frame:Redraw()
@@ -479,7 +492,7 @@ function BlessingHelper:SetupConfig()
 
     config.args.profiles = LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db)
 
-    aceConfig:RegisterOptionsTable(addon, config)
+    aceConfig:RegisterOptionsTable(addon, config, { "bh", "blessinghelper" })
     aceConfigDialog:AddToBlizOptions(addon)
 end
 

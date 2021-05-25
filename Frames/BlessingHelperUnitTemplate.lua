@@ -12,6 +12,10 @@ function BlessingHelperUnitTemplate_OnLoad(self)
         end
     end
 
+    function self:IsPetUnit()
+        return self.Unit:lower():find("pet") ~= nil
+    end
+
     function self:Blessings(own)
         local buf = {}
 
@@ -81,6 +85,37 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
 
         local blessings = self:Blessings()
 
+        -- Get the current, smallest blessing that is from the player
+        local smallest = nil
+        for i = 1, #blessings do
+            if blessings[i].unitCaster == "player" and (smallest == nil or blessings[i].expirationTime < smallest.expirationTime) then
+                smallest = blessings[i]
+            end
+        end
+
+        if smallest then
+            -- Update display based on the current blessing
+            local exp = smallest.expirationTime - GetTime()
+            local m = math.floor(exp / 60)
+            local s = math.floor(exp - m * 60)
+
+            self.Icon:Show()
+            self.Icon:SetTexture(smallest.icon)
+            self.Duration:SetText(string.format("%02.0f:%02.0f", m, s))
+            self:SetBackdropColor(BlessingHelper.db.profile.buffedColor[1], BlessingHelper.db.profile.buffedColor[2], BlessingHelper.db.profile.buffedColor[3], 1)
+        else
+            self.Duration:SetText("00:00")
+
+            if self:IsPetUnit() then
+                self:SetBackdropColor(BlessingHelper.db.profile.unbuffedPetColor[1], BlessingHelper.db.profile.unbuffedPetColor[2], BlessingHelper.db.profile.unbuffedPetColor[3], 1)
+            else
+                self:SetBackdropColor(BlessingHelper.db.profile.unbuffedColor[1], BlessingHelper.db.profile.unbuffedColor[2], BlessingHelper.db.profile.unbuffedColor[3], 1)
+            end
+        end
+
+        -- Do not go further if in combat
+        if InCombatLockdown() then return end
+
         -- Get the class of the unit
         local class = select(2, UnitClass(self.Unit))
         class = class:sub(1, 1)..class:sub(2):lower()
@@ -100,6 +135,15 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
             end
         end
 
+        -- No blessing found
+        if not targetBlessingName then
+            if not smallest then
+                self:SetAttribute("spell1", "")
+            end
+            self:SetAttribute("spell2",  "")
+            return
+        end
+
         if BlessingHelper.db.profile.spells.useGreater then
             ---@diagnostic disable-next-line: redundant-parameter
             local usable, noMana = IsUsableSpell("Greater "..targetBlessingName)
@@ -110,41 +154,10 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
         end
 
         -- Set the secondary cast to always be based on priority
-        if not InCombatLockdown() then
-            self:SetAttribute("spell2",  targetBlessingName)
-        end
+        self:SetAttribute("spell2",  targetBlessingName)
 
-        -- Get the current, smallest blessing that is from the player
-        local smallest = nil
-        for i = 1, #blessings do
-            if blessings[i].unitCaster == "player" and (smallest == nil or blessings[i].expirationTime < smallest.expirationTime) then
-                smallest = blessings[i]
-            end
-        end
-
-        if not smallest then
-            if self.Last == nil and not InCombatLockdown() then
-                self:SetAttribute("spell1", targetBlessingName)
-            end
-
-            self.Duration:SetText("00:00")
-            self:SetBackdropColor(BlessingHelper.db.profile.unbuffedColor[1], BlessingHelper.db.profile.unbuffedColor[2], BlessingHelper.db.profile.unbuffedColor[3], 1)
-            return
-        end
-
-        local exp = smallest.expirationTime - GetTime()
-        local m = math.floor(exp / 60)
-        local s = math.floor(exp - m * 60)
-
-        if not InCombatLockdown() then
-            self:SetAttribute("spell1", smallest.name)
-        end
-        self.Icon:Show()
-        self.Icon:SetTexture(smallest.icon)
-        self.Duration:SetText(string.format("%02.0f:%02.0f", m, s))
-        self:SetBackdropColor(BlessingHelper.db.profile.buffedColor[1], BlessingHelper.db.profile.buffedColor[2], BlessingHelper.db.profile.buffedColor[3], 1)
-
-        self.Last = smallest
+        -- Update primary cast
+        self:SetAttribute("spell1", smallest and smallest.name or targetBlessingName)
     end
 end
 -- endregion

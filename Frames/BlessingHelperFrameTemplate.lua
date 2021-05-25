@@ -1,24 +1,13 @@
 local addon = ...
 
 -- region BlessingHelperFrame events
-function BlessingHelperFrameTemplate_OnEvent(self, event, ...)
-    if event == "ADDON_LOADED" then
-        if ... == addon then
-            self:Redraw()
-            self:UnregisterEvent("ADDON_LOADED")
-        end
-
-        return
-    end
-
+function BlessingHelperFrameTemplate_OnEvent(self)
     self:Redraw()
 end
 
 function BlessingHelperFrameTemplate_OnLoad(self)
-    self:RegisterEvent("ADDON_LOADED")
-    self:RegisterEvent("PLAYER_LOGIN")
-    self:RegisterEvent("PLAYER_ENTERING_WORLD")
     self:RegisterEvent("GROUP_ROSTER_UPDATE")
+    self:RegisterEvent("UNIT_PET")
 
     self.Background:SetTexture("Interface\\Addons\\"..addon.."\\Textures\\Background")
     self.Background:ClearAllPoints()
@@ -84,6 +73,7 @@ function BlessingHelperFrameTemplate_OnLoad(self)
             local f = CreateFrame("button", nil, self, "BlessingHelperUnitTemplate")
             f.Unit = unit.id..(unit.max and i or "")
             f:SetAttribute("unit", f.Unit)
+            RegisterUnitWatch(f)
             table.insert(self.Units, f)
         end
     end
