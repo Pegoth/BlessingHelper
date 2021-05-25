@@ -104,6 +104,8 @@ function BlessingHelperFrameTemplate_OnMouseUp(self)
     if self.IsMoving then
         self:StopMovingOrSizing()
         self.IsMoving = false
+
+        BlessingHelper.db.profile.mainFrameAnchor.point, _, BlessingHelper.db.profile.mainFrameAnchor.relativePoint, BlessingHelper.db.profile.mainFrameAnchor.x, BlessingHelper.db.profile.mainFrameAnchor.y = self:GetPoint(1)
     end
 end
 -- endregion

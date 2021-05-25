@@ -85,6 +85,12 @@ function BlessingHelper:SetupDB()
             spells = {
                 useGreater = true,
                 ["*"] = {}
+            },
+            mainFrameAnchor = {
+                point = "CENTER",
+                relativePoint = "CENTER",
+                x = 0,
+                y = 0
             }
         }
     }
@@ -148,6 +154,21 @@ function BlessingHelper:SetupConfig()
                             self.Frame:Redraw()
                         end,
                         get = function () return self.db.profile.maximumRows end
+                    },
+                    resetPosition = {
+                        name = "Reset position",
+                        desc = "Resets the position of the main frame.",
+                        type = "execute",
+                        order = 4,
+                        func = function ()
+                            self.db.profile.mainFrameAnchor.point = "CENTER"
+                            self.db.profile.mainFrameAnchor.relativePoint = "CENTER"
+                            self.db.profile.mainFrameAnchor.x = 0
+                            self.db.profile.mainFrameAnchor.y = 0
+
+                            self.Frame:ClearAllPoints()
+                            self.Frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+                        end
                     }
                 }
             },
@@ -410,6 +431,8 @@ end
 
 function BlessingHelper:SetupFrame()
     self.Frame = CreateFrame("frame", nil, UIParent, "BlessingHelperFrameTemplate")
+    self.Frame:ClearAllPoints()
+    self.Frame:SetPoint(self.db.profile.mainFrameAnchor.point, UIParent, self.db.profile.mainFrameAnchor.relativePoint, self.db.profile.mainFrameAnchor.x, self.db.profile.mainFrameAnchor.y)
 end
 
 function BlessingHelper.CreateBackdrop(frame, r, g, b, a)
