@@ -2,6 +2,6 @@
 
 ## Title: BlessingHelper
 ## Author: Pegoth
-## SavedVariables: BlessingHelperConfig
+## SavedVariables: BlessingHelperDB
 
 loader.xml

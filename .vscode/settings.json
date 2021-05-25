@@ -1,19 +1,7 @@
 {
     "Lua.diagnostics.globals": [
-        "bit",
-        "LibStub",
-        "CreateFrame",
-        "BlessingHelperFrame",
-        "C_Map",
-        "UnitExists",
-        "UnitName",
-        "IsSpellInRange",
-        "UnitBuff",
-        "GetTime",
-        "IsInGroup",
-        "UnitInRaid",
-        "InCombatLockdown",
         "InfinitySearch",
-        "UnitClass"
+        "CLASS_ABBR",
+        "LibStub"
     ]
 }

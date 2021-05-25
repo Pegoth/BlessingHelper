@@ -37,10 +37,12 @@ function BlessingHelperUnitTemplate_OnLoad(self)
     end
 
     function self:Redraw()
+        self.Icon:SetWidth(BlessingHelper.db.profile.unitHeight)
+        self.Icon:SetHeight(BlessingHelper.db.profile.unitHeight)
         self.Name:ClearAllPoints()
-        self.Name:SetPoint("LEFT", self, "LEFT", BlessingHelperConfig.unitHeight + 2, 0)
-        self.Name:SetFont(media:Fetch("font", BlessingHelperConfig.unitFont), BlessingHelperConfig.unitFontSize)
-        self.Duration:SetFont(media:Fetch("font", BlessingHelperConfig.durationFont), BlessingHelperConfig.durationFontSize)
+        self.Name:SetPoint("LEFT", self, "LEFT", BlessingHelper.db.profile.unitHeight + 2, 0)
+        self.Name:SetFont(media:Fetch("font", BlessingHelper.db.profile.unitFont), BlessingHelper.db.profile.unitFontSize)
+        self.Duration:SetFont(media:Fetch("font", BlessingHelper.db.profile.durationFont), BlessingHelper.db.profile.durationFontSize)
     end
 
     self:Redraw()
@@ -53,7 +55,7 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
 
         if not UnitExists(self.Unit) then
             self.Icon:Hide()
-            self.Name:SetText(self.Unit or "unknown")
+            self.Name:SetText(self.Unit)
             self.Duration:SetText("00:00")
             self:SetBackdropColor(0, 0, 0, 1)
             return
@@ -61,10 +63,10 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
 
         self.Name:SetText(UnitName(self.Unit))
 
-        if not IsSpellInRange("Blessing of Wisdom", self.Unit) then
+        if not IsSpellInRange(BlessingHelper.RangeCheckSpell, self.Unit) then
             self.Icon:Hide()
             self.Duration:SetText("00:00")
-            self:SetBackdropColor(BlessingHelperConfig.outOfRangeColor[1], BlessingHelperConfig.outOfRangeColor[2], BlessingHelperConfig.outOfRangeColor[3], 1)
+            self:SetBackdropColor(BlessingHelper.db.profile.outOfRangeColor[1], BlessingHelper.db.profile.outOfRangeColor[2], BlessingHelper.db.profile.outOfRangeColor[3], 1)
             return
         end
 
@@ -76,18 +78,24 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
 
         -- Get available blessings
         local targetBlessingName, targetBlessingPriority
-        for i, blessing in ipairs(BlessingHelper.Blessings) do
-            local e, p = BlessingHelper.GetSpell(class, blessing, true, i)
-            if e and not self:Contains(blessings, blessing, false) then
-                if targetBlessingPriority == nil or targetBlessingPriority > p then
+        for _, blessing in ipairs(BlessingHelper.Blessings) do
+            ---@diagnostic disable-next-line: redundant-parameter
+            local usable, noMana = IsUsableSpell(blessing)
+            local enabled = BlessingHelper.db.profile.spells[class][blessing].enabled
+            local priority = BlessingHelper.db.profile.spells[class][blessing].priority
+            if enabled and (usable or noMana) and not self:Contains(blessings, blessing, false) then
+                if targetBlessingPriority == nil or targetBlessingPriority > priority then
                     targetBlessingName = blessing
-                    targetBlessingPriority = p
+                    targetBlessingPriority = priority
                 end
             end
         end
 
-        if BlessingHelperConfig.spells ~= nil then
-            if BlessingHelperConfig.spells.useGreater then
+        if BlessingHelper.db.profile.spells.useGreater then
+            ---@diagnostic disable-next-line: redundant-parameter
+            local usable, noMana = IsUsableSpell("Greater "..targetBlessingName)
+
+            if usable or noMana then
                 targetBlessingName = "Greater "..targetBlessingName
             end
         end
@@ -111,7 +119,7 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
             end
 
             self.Duration:SetText("00:00")
-            self:SetBackdropColor(BlessingHelperConfig.unbuffedColor[1], BlessingHelperConfig.unbuffedColor[2], BlessingHelperConfig.unbuffedColor[3], 1)
+            self:SetBackdropColor(BlessingHelper.db.profile.unbuffedColor[1], BlessingHelper.db.profile.unbuffedColor[2], BlessingHelper.db.profile.unbuffedColor[3], 1)
             return
         end
 
@@ -125,7 +133,7 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
         self.Icon:Show()
         self.Icon:SetTexture(smallest.icon)
         self.Duration:SetText(string.format("%02.0f:%02.0f", m, s))
-        self:SetBackdropColor(BlessingHelperConfig.buffedColor[1], BlessingHelperConfig.buffedColor[2], BlessingHelperConfig.buffedColor[3], 1)
+        self:SetBackdropColor(BlessingHelper.db.profile.buffedColor[1], BlessingHelper.db.profile.buffedColor[2], BlessingHelper.db.profile.buffedColor[3], 1)
 
         self.Last = smallest
     end

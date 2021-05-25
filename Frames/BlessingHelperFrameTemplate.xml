@@ -1,6 +1,6 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/ ..\FrameXML\UI.xsd">
-    <Frame name="BlessingHelperFrame" parent="UIParent" frameStrata="HIGH" enableMouse="true" movable="true" clampedToScreen="true">
+    <Frame name="BlessingHelperFrameTemplate" virtual="true" frameStrata="HIGH" enableMouse="true" movable="true" clampedToScreen="true">
         <Size x="291" y="153"/>
         <Anchors>
             <Anchor point="CENTER"/>
@@ -12,10 +12,10 @@
             </Layer>
         </Layers>
         <Scripts>
-            <OnEvent function="BlessingHelperFrame_OnEvent"/>
-            <OnLoad function="BlessingHelperFrame_OnLoad"/>
-            <OnMouseDown function="BlessingHelperFrame_OnMouseDown"/>
-            <OnMouseUp function="BlessingHelperFrame_OnMouseUp"/>
+            <OnEvent function="BlessingHelperFrameTemplate_OnEvent"/>
+            <OnLoad function="BlessingHelperFrameTemplate_OnLoad"/>
+            <OnMouseDown function="BlessingHelperFrameTemplate_OnMouseDown"/>
+            <OnMouseUp function="BlessingHelperFrameTemplate_OnMouseUp"/>
         </Scripts>
     </Frame>
 </Ui>
