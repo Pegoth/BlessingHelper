@@ -36,6 +36,15 @@ function BlessingHelperUnitTemplate_OnLoad(self)
         return buf
     end
 
+    function self:SetName(name)
+        if BlessingHelper.db.profile.unitLength <= 0 then
+            self.Name:SetText("")
+            return
+        end
+
+        self.Name:SetText(name:sub(1, BlessingHelper.db.profile.unitLength))
+    end
+
     function self:Redraw()
         self.Icon:SetWidth(BlessingHelper.db.profile.unitHeight)
         self.Icon:SetHeight(BlessingHelper.db.profile.unitHeight)
@@ -55,13 +64,13 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
 
         if not UnitExists(self.Unit) then
             self.Icon:Hide()
-            self.Name:SetText(self.Unit)
+            self:SetName(self.Unit)
             self.Duration:SetText("00:00")
             self:SetBackdropColor(0, 0, 0, 1)
             return
         end
 
-        self.Name:SetText(UnitName(self.Unit))
+        self:SetName(UnitName(self.Unit))
 
         if not IsSpellInRange(BlessingHelper.RangeCheckSpell, self.Unit) then
             self.Icon:Hide()
