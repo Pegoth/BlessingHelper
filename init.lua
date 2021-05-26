@@ -438,6 +438,37 @@ function BlessingHelper:SetupConfig()
         }
     }
 
+    local function SetPriority(class, blessing, new)
+        if new >= 1 and new <= #self.Blessings then
+            local old = self.db.profile.spells[class][blessing].priority
+
+            if old ~= new then
+               local buf = {}
+                for k, v in pairs(self.db.profile.spells[class]) do
+                    table.insert(buf, {k = k, v = v})
+                end
+
+                if old < new then
+                    table.sort(buf, function (a, b) return a.v.priority < b.v.priority end)
+                    for _, kv in ipairs(buf) do
+                        if kv.v.priority > old and kv.v.priority <= new then
+                            kv.v.priority = kv.v.priority - 1
+                        end
+                    end
+                else
+                    table.sort(buf, function (a, b) return a.v.priority > b.v.priority end)
+                    for _, kv in ipairs(buf) do
+                        if kv.v.priority < old and kv.v.priority >= new then
+                            kv.v.priority = kv.v.priority + 1
+                        end
+                    end
+                end
+
+                self.db.profile.spells[class][blessing].priority = new
+            end
+        end
+    end
+
     for i, class in ipairs(BlessingHelper.Classes) do
         local args = {}
 
@@ -464,30 +495,20 @@ function BlessingHelper:SetupConfig()
                         min = 1,
                         max = #BlessingHelper.Blessings,
                         order = 2,
-                        set = function (_, value) self.db.profile.spells[class][blessing].priority = value end,
+                        set = function (_, value) SetPriority(class, blessing, value) end,
                         get = function () return self.db.profile.spells[class][blessing].priority end
                     },
                     up = {
                         name = "Up",
                         type = "execute",
                         order = 3,
-                        func = function ()
-                            local p = self.db.profile.spells[class][blessing].priority
-                            if p > 1 then
-                                self.db.profile.spells[class][blessing].priority = p - 1
-                            end
-                        end
+                        func = function () SetPriority(class, blessing, self.db.profile.spells[class][blessing].priority - 1) end
                     },
                     down = {
                         name = "Down",
                         type = "execute",
                         order = 4,
-                        func = function ()
-                            local p = self.db.profile.spells[class][blessing].priority
-                            if p < 6 then
-                                self.db.profile.spells[class][blessing].priority = p + 1
-                            end
-                        end
+                        func = function () SetPriority(class, blessing, self.db.profile.spells[class][blessing].priority + 1) end
                     }
                 }
             }
