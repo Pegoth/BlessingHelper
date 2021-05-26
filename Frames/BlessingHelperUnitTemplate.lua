@@ -6,7 +6,7 @@ function BlessingHelperUnitTemplate_OnLoad(self)
 
     function self:Contains(blessings, blessing, own)
         for i = 1, #blessings do
-            if blessings[i].name == blessing and (own == nil or own == true and blessings[i].unitCaster == "player" or own == false and blessings[i].unitCaster ~= "player") then
+            if blessings[i].name:find(blessing) ~= nil and (own == nil or own == true and blessings[i].unitCaster == "player" or own == false and blessings[i].unitCaster ~= "player") then
                 return blessing, blessings[i].unitCaster == "player"
             end
         end
@@ -108,7 +108,7 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
 
             self.Duration:SetText(string.format("%02.0f:%02.0f", m, s))
             self:SetBackdropColor(BlessingHelper.db.profile.buffedColor[1], BlessingHelper.db.profile.buffedColor[2], BlessingHelper.db.profile.buffedColor[3], 1)
-            self.Last = smallest
+            self.Last = smallest.name:gsub("Greater ", "")
         else
             self.Duration:SetText("00:00")
 
@@ -116,6 +116,11 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
                 self:SetBackdropColor(BlessingHelper.db.profile.unbuffedPetColor[1], BlessingHelper.db.profile.unbuffedPetColor[2], BlessingHelper.db.profile.unbuffedPetColor[3], 1)
             else
                 self:SetBackdropColor(BlessingHelper.db.profile.unbuffedColor[1], BlessingHelper.db.profile.unbuffedColor[2], BlessingHelper.db.profile.unbuffedColor[3], 1)
+            end
+
+            -- Remove the last used when someone else used it on the unit
+            if self.Last and self:Contains(blessings, self.Last, false) then
+                self.Last = nil
             end
         end
 
@@ -185,7 +190,7 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
         end
 
         -- Update primary cast
-        local primary = smallest and smallest.name or self.Last and self.Last.name or targetBlessingName
+        local primary = smallest and smallest.name or self.Last or targetBlessingName
         ---@diagnostic disable-next-line: redundant-parameter
         self.LeftIcon:SetTexture((select(3, GetSpellInfo(primary))))
         self:SetAttribute("spell1", primary)

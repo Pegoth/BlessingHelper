@@ -8,6 +8,7 @@ function BlessingHelper:OnInitialize()
     self:SetupDB()
     self:SetupConfig()
     self:SetupInfinitySearch()
+    self:SetupMinimapIcon()
 end
 
 function BlessingHelper:OnEnable()
@@ -79,6 +80,19 @@ function BlessingHelper:SetupHelpers()
         end
 
         return false
+    end
+
+    function self.CreateBackdrop(frame, r, g, b, a)
+        frame:SetBackdrop({
+            bgFile = "Interface\\Addons\\"..addon.."\\Textures\\Background",
+            insets = {
+                left = 0,
+                top = 0,
+                right = 0,
+                bottom = 0
+            }
+        })
+        frame:SetBackdropColor(r, g, b, a)
     end
 end
 
@@ -450,7 +464,7 @@ function BlessingHelper:SetupConfig()
                         order = 1
                     },
                     spellDesc = {
-                        name = "Which blessing will be cast is based on three factors (in order):\n  1.) If the unit already has a buff from the player or one expired it will be choosen.\n  2.) If the unit name exists in the Spell overrides (and both the Spell overrides and the specific override is enabled) that setting will be used.\n  3.) Based on the unit class from the Spells settings.",
+                        name = "Which blessing will be cast is based on three factors (in order):\n  \124cffffff001.)\124r If the unit already has a buff from the player or one expired it will be choosen.\n  \124cffffff002.)\124r If the unit name exists in the Spell overrides (and both the Spell overrides and the specific override is enabled) that setting will be used.\n  \124cffffff003.)\124r Based on the unit class from the Spells settings.",
                         type = "description",
                         order = 2
                     },
@@ -460,7 +474,7 @@ function BlessingHelper:SetupConfig()
                         order = 3
                     },
                     buttonsDesc = {
-                        name = "There are 3 mouse button action available for each unit:\n  Left click: Smart cast the blessing based on the description above.\n  Right click: Cast the blessing based on the points 2. and 3. mentioned above (meaning it will ignore the current buff).\n  Middle click: Target the unit",
+                        name = "There are 3 mouse button action available for each unit:\n  \124cffffff00Left click:\124r Smart cast the blessing based on the description above.\n  \124cffffff00Right click:\124r Cast the blessing based on the points \124cffffff002.\124r and \124cffffff003.\124r mentioned above (meaning it will ignore the current buff).\n  \124cffffff00Middle click:\124r Target the unit",
                         type = "description",
                         order = 4
                     },
@@ -863,17 +877,31 @@ function BlessingHelper:SetupFrame()
     end
 end
 
-function BlessingHelper.CreateBackdrop(frame, r, g, b, a)
-    frame:SetBackdrop({
-        bgFile = "Interface\\Addons\\"..addon.."\\Textures\\Background",
-        insets = {
-            left = 0,
-            top = 0,
-            right = 0,
-            bottom = 0
-        }
-    })
-    frame:SetBackdropColor(r, g, b, a)
+function BlessingHelper:SetupMinimapIcon()
+    local icon = LibStub("LibDBIcon-1.0")
+    icon:Register(addon, LibStub("LibDataBroker-1.1"):NewDataObject(addon, {
+            type = "data source",
+            text = addon,
+            icon = 135995,
+            OnClick = function(_, button)
+                if button == "LeftButton" then
+                    self.db.profile.enabled = not self.db.profile.enabled
+                    if self.db.profile.enabled then
+                        self.Frame:Show()
+                    else
+                        self.Frame:Hide()
+                    end
+                    LibStub("AceConfigRegistry-3.0"):NotifyChange(addon)
+                elseif button == "RightButton" then
+                    LibStub("AceConfigDialog-3.0"):Open(addon)
+                end
+            end,
+            OnTooltipShow = function (tooltip)
+                tooltip:AddLine(addon, 1, 1, 1)
+                tooltip:AddLine("\124cffffffffLeft click:\124r Toggle addon")
+                tooltip:AddLine("\124cffffffffRight click:\124r Show settings");
+            end
+        }),
+        self.db.profile.minimap
+    )
 end
-
--- Limit name length?
