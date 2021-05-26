@@ -50,8 +50,12 @@ function BlessingHelperUnitTemplate_OnLoad(self)
     end
 
     function self:Redraw()
-        self.Icon:SetWidth(BlessingHelper.db.profile.unitHeight)
-        self.Icon:SetHeight(BlessingHelper.db.profile.unitHeight)
+        self.LeftIcon:SetWidth(BlessingHelper.db.profile.unitHeight / 2)
+        self.LeftIcon:SetHeight(BlessingHelper.db.profile.unitHeight)
+        self.RightIcon:ClearAllPoints()
+        self.RightIcon:SetPoint("LEFT", self, "LEFT", BlessingHelper.db.profile.unitHeight / 2, 0)
+        self.RightIcon:SetWidth(BlessingHelper.db.profile.unitHeight / 2)
+        self.RightIcon:SetHeight(BlessingHelper.db.profile.unitHeight)
         self.Name:ClearAllPoints()
         self.Name:SetPoint("LEFT", self, "LEFT", BlessingHelper.db.profile.unitHeight + 2, 0)
         self.Name:SetFont(media:Fetch("font", BlessingHelper.db.profile.unitFont), BlessingHelper.db.profile.unitFontSize)
@@ -67,7 +71,8 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
         self.TimeSinceLastUpdate = 0
 
         if not UnitExists(self.Unit) then
-            self.Icon:Hide()
+            self.LeftIcon:Hide()
+            self.RightIcon:Hide()
             self:SetName(self.Unit)
             self.Duration:SetText("00:00")
             self:SetBackdropColor(0, 0, 0, 1)
@@ -78,7 +83,8 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
         self:SetName(name)
 
         if not IsSpellInRange(BlessingHelper.RangeCheckSpell, self.Unit) then
-            self.Icon:Hide()
+            self.LeftIcon:Hide()
+            self.RightIcon:Hide()
             self.Duration:SetText("00:00")
             self:SetBackdropColor(BlessingHelper.db.profile.outOfRangeColor[1], BlessingHelper.db.profile.outOfRangeColor[2], BlessingHelper.db.profile.outOfRangeColor[3], 1)
             return
@@ -100,10 +106,9 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
             local m = math.floor(exp / 60)
             local s = math.floor(exp - m * 60)
 
-            self.Icon:Show()
-            self.Icon:SetTexture(smallest.icon)
             self.Duration:SetText(string.format("%02.0f:%02.0f", m, s))
             self:SetBackdropColor(BlessingHelper.db.profile.buffedColor[1], BlessingHelper.db.profile.buffedColor[2], BlessingHelper.db.profile.buffedColor[3], 1)
+            self.Last = smallest
         else
             self.Duration:SetText("00:00")
 
@@ -161,10 +166,12 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
 
         -- No blessing found
         if not targetBlessingName then
-            if not smallest then
+            if not smallest and not self.Last then
                 self:SetAttribute("spell1", "")
+                self.LeftIcon:Hide()
             end
             self:SetAttribute("spell2",  "")
+            self.RightIcon:Hide()
             return
         end
 
@@ -177,11 +184,18 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
             end
         end
 
-        -- Set the secondary cast to always be based on priority
-        self:SetAttribute("spell2",  targetBlessingName)
-
         -- Update primary cast
-        self:SetAttribute("spell1", smallest and smallest.name or targetBlessingName)
+        local primary = smallest and smallest.name or self.Last and self.Last.name or targetBlessingName
+        ---@diagnostic disable-next-line: redundant-parameter
+        self.LeftIcon:SetTexture((select(3, GetSpellInfo(primary))))
+        self:SetAttribute("spell1", primary)
+        self.LeftIcon:Show()
+
+        -- Set the secondary cast to always be based on priority
+        ---@diagnostic disable-next-line: redundant-parameter
+        self.RightIcon:SetTexture((select(3, GetSpellInfo(targetBlessingName))))
+        self:SetAttribute("spell2",  targetBlessingName)
+        self.RightIcon:Show()
     end
 end
 -- endregion

@@ -93,7 +93,7 @@ function BlessingHelper:SetupDB()
             unitHeight = 20,
             horizontalPadding = 1,
             verticalPadding = 1,
-            unitLength = 15,
+            unitLength = 12,
             unitFont = "PT Sans Narrow",
             unitFontSize = 10,
             durationFont = "PT Sans Narrow",

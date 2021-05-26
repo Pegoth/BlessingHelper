@@ -3,10 +3,14 @@
     <Button name="BlessingHelperUnitTemplate" virtual="true" registerForClicks="AnyUp" frameLevel="10" inherits="SecureUnitButtonTemplate,BackdropTemplate">
         <Layers>
             <Layer>
-                <Texture parentKey="Icon">
+                <Texture parentKey="LeftIcon">
                     <Anchors>
                         <Anchor point="LEFT"/>
                     </Anchors>
+                    <TexCoords left="0" top="0" right="0.5" bottom="1" />
+                </Texture>
+                <Texture parentKey="RightIcon">
+                    <TexCoords left="0.5" top="0" right="1" bottom="1" />
                 </Texture>
                 <FontString parentKey="Name" justifyH="LEFT">
                 </FontString>
