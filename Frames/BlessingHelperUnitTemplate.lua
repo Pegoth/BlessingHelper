@@ -74,7 +74,8 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
             return
         end
 
-        self:SetName(UnitName(self.Unit))
+        local name = UnitName(self.Unit)
+        self:SetName(name)
 
         if not IsSpellInRange(BlessingHelper.RangeCheckSpell, self.Unit) then
             self.Icon:Hide()
@@ -116,23 +117,46 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
         -- Do not go further if in combat
         if InCombatLockdown() then return end
 
-        -- Get the class of the unit
-        local class = select(2, UnitClass(self.Unit))
-        class = class:sub(1, 1)..class:sub(2):lower()
+        local targetBlessingName, targetBlessingPriority, allowGreater
 
-        -- Get available blessings
-        local targetBlessingName, targetBlessingPriority
-        for _, blessing in ipairs(BlessingHelper.Blessings) do
-            ---@diagnostic disable-next-line: redundant-parameter
-            local usable, noMana = IsUsableSpell(blessing)
-            local enabled = BlessingHelper.db.profile.spells[class][blessing].enabled
-            local priority = BlessingHelper.db.profile.spells[class][blessing].priority
-            if enabled and (usable or noMana) and not self:Contains(blessings, blessing, false) then
-                if targetBlessingPriority == nil or targetBlessingPriority > priority then
-                    targetBlessingName = blessing
-                    targetBlessingPriority = priority
+        -- Check if a name override exists
+        if BlessingHelper.db.profile.overridesConfig.enabled and BlessingHelper.Contains(BlessingHelper.db.profile.overridesConfig.names, name) and BlessingHelper.db.profile.overrides[name].enabled then
+            -- Get available blessings
+            for _, blessing in ipairs(BlessingHelper.Blessings) do
+                ---@diagnostic disable-next-line: redundant-parameter
+                local usable, noMana = IsUsableSpell(blessing)
+                local enabled = BlessingHelper.db.profile.overrides[name][blessing].enabled
+                local priority = BlessingHelper.db.profile.overrides[name][blessing].priority
+                if enabled and (usable or noMana) and not self:Contains(blessings, blessing, false) then
+                    if targetBlessingPriority == nil or targetBlessingPriority > priority then
+                        targetBlessingName = blessing
+                        targetBlessingPriority = priority
+                    end
                 end
             end
+
+            -- Disallow greater blessings for personal buffs
+            allowGreater = false
+        else
+            -- Get the class of the unit
+            local class = select(2, UnitClass(self.Unit))
+            class = class:sub(1, 1)..class:sub(2):lower()
+
+            -- Get available blessings
+            for _, blessing in ipairs(BlessingHelper.Blessings) do
+                ---@diagnostic disable-next-line: redundant-parameter
+                local usable, noMana = IsUsableSpell(blessing)
+                local enabled = BlessingHelper.db.profile.spells[class][blessing].enabled
+                local priority = BlessingHelper.db.profile.spells[class][blessing].priority
+                if enabled and (usable or noMana) and not self:Contains(blessings, blessing, false) then
+                    if targetBlessingPriority == nil or targetBlessingPriority > priority then
+                        targetBlessingName = blessing
+                        targetBlessingPriority = priority
+                    end
+                end
+            end
+
+            allowGreater = true
         end
 
         -- No blessing found
@@ -144,7 +168,7 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
             return
         end
 
-        if BlessingHelper.db.profile.spells.useGreater then
+        if allowGreater and BlessingHelper.db.profile.spells.useGreater then
             ---@diagnostic disable-next-line: redundant-parameter
             local usable, noMana = IsUsableSpell("Greater "..targetBlessingName)
 

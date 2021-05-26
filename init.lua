@@ -4,6 +4,7 @@ BlessingHelper = LibStub("AceAddon-3.0"):NewAddon(addon)
 
 function BlessingHelper:OnInitialize()
     self:SetupConstants()
+    self:SetupHelpers()
     self:SetupDB()
     self:SetupConfig()
     self:SetupInfinitySearch()
@@ -65,6 +66,22 @@ function BlessingHelper:SetupConstants()
     end
 end
 
+function BlessingHelper:SetupHelpers()
+    function self.Contains(tbl, value)
+        if type(tbl) ~= "table" then
+            return false
+        end
+
+        for _, v in pairs(tbl) do
+            if v == value then
+                return true
+            end
+        end
+
+        return false
+    end
+end
+
 function BlessingHelper:SetupDB()
     local defaults = {
         profile = {
@@ -89,6 +106,16 @@ function BlessingHelper:SetupDB()
                 useGreater = true,
                 ["*"] = {}
             },
+            overridesConfig = {
+                enabled = false,
+                name = "",
+                names = {}
+            },
+            overrides = {
+                ["*"] = {
+                    enabled = true
+                }
+            },
             mainFrameAnchor = {
                 point = "CENTER",
                 relativePoint = "CENTER",
@@ -100,6 +127,10 @@ function BlessingHelper:SetupDB()
 
     for priority, blessing in ipairs(self.Blessings) do
         defaults.profile.spells["*"][blessing] = {
+            enabled = true,
+            priority = priority
+        }
+        defaults.profile.overrides["*"][blessing] = {
             enabled = true,
             priority = priority
         }
@@ -212,6 +243,7 @@ function BlessingHelper:SetupConfig()
                                 name = "Unit width",
                                 desc = "The width of the unit.",
                                 type = "range",
+                                step = 1,
                                 min = 1,
                                 softMax = 1024,
                                 order = 1,
@@ -225,6 +257,7 @@ function BlessingHelper:SetupConfig()
                                 name = "Unit height",
                                 desc = "The height of the unit.",
                                 type = "range",
+                                step = 1,
                                 min = 1,
                                 softMax = 512,
                                 order = 2,
@@ -238,6 +271,7 @@ function BlessingHelper:SetupConfig()
                                 name = "Horizontal padding",
                                 desc = "The pixels between units on the Y coord.",
                                 type = "range",
+                                step = 1,
                                 min = 0,
                                 softMax = 10,
                                 order = 3,
@@ -251,6 +285,7 @@ function BlessingHelper:SetupConfig()
                                 name = "Vertical padding",
                                 desc = "The pixels between units on the Y coord.",
                                 type = "range",
+                                step = 1,
                                 min = 0,
                                 softMax = 10,
                                 order = 4,
@@ -285,6 +320,7 @@ function BlessingHelper:SetupConfig()
                                 name = "Unit font size",
                                 desc = "The size of the font that is used to display the unit.",
                                 type = "range",
+                                step = 1,
                                 min = 1,
                                 softMax = 64,
                                 order = 2,
@@ -311,6 +347,7 @@ function BlessingHelper:SetupConfig()
                                 name = "Duration font size",
                                 desc = "The size of the font that is used to display the duration.",
                                 type = "range",
+                                step = 1,
                                 min = 1,
                                 softMax = 64,
                                 order = 4,
@@ -388,6 +425,7 @@ function BlessingHelper:SetupConfig()
                                 name = "Unit length",
                                 desc = "The maximum length of the unit name. Set to 0 to not display names at all.",
                                 type = "range",
+                                step = 1,
                                 min = 0,
                                 softMax = 12,
                                 order = 1,
@@ -400,127 +438,342 @@ function BlessingHelper:SetupConfig()
                         }
                     }
                 }
+            }
+        }
+    }
+
+    local function AddSpells()
+        config.args.spells = {
+            name = "Spells",
+            type = "group",
+            order = 4,
+            args = {
+                useGreater = {
+                    name = "Use Greater blessings",
+                    desc = "When checked will cast Greater Blessing of ... instead of Blessing of ...",
+                    type = "toggle",
+                    order = 1,
+                    set = function (_, value) self.db.profile.spells.useGreater = value end,
+                    get = function () return self.db.profile.spells.useGreater end
+                },
+                special = {
+                    name = "Special",
+                    type = "group",
+                    inline = true,
+                    order = 2,
+                    args = {
+                        resetPosition = {
+                            name = "Reset",
+                            desc = "Resets the settings of the spells/classes to their default.",
+                            type = "execute",
+                            order = 1,
+                            func = function ()
+                                local useGreater = self.db.profile.spells.useGreater
+                                wipe(self.db.profile.spells)
+                                self.db.profile.spells.useGreater = useGreater
+                                AddSpells()
+                            end
+                        }
+                    }
+                }
             },
-            spells = {
-                name = "Spells",
+        }
+
+        -- Moves all priorities of blessings down/up when one blessing is moved to a specific priority
+        local function SetPriority(class, blessing, new)
+            if new >= 1 and new <= #self.Blessings then
+                local old = self.db.profile.spells[class][blessing].priority
+
+                if old ~= new then
+                local buf = {}
+                    for k, v in pairs(self.db.profile.spells[class]) do
+                        table.insert(buf, {k = k, v = v})
+                    end
+
+                    if old < new then
+                        table.sort(buf, function (a, b) return a.v.priority < b.v.priority end)
+                        for _, kv in ipairs(buf) do
+                            if kv.v.priority > old and kv.v.priority <= new then
+                                kv.v.priority = kv.v.priority - 1
+                            end
+                        end
+                    else
+                        table.sort(buf, function (a, b) return a.v.priority > b.v.priority end)
+                        for _, kv in ipairs(buf) do
+                            if kv.v.priority < old and kv.v.priority >= new then
+                                kv.v.priority = kv.v.priority + 1
+                            end
+                        end
+                    end
+
+                    self.db.profile.spells[class][blessing].priority = new
+                end
+            end
+        end
+
+        for i, class in ipairs(BlessingHelper.Classes) do
+            config.args.spells.args[class] = {
+                name = class,
                 type = "group",
-                order = 4,
-                args = {
-                    useGreater = {
-                        name = "Use Greater blessings",
-                        desc = "When checked will cast Greater Blessing of ... instead of Blessing of ...",
-                        type = "toggle",
-                        order = 1,
-                        set = function (_, value) self.db.profile.spells.useGreater = value end,
-                        get = function () return self.db.profile.spells.useGreater end
-                    },
-                    special = {
-                        name = "Special",
-                        type = "group",
-                        inline = true,
-                        order = 2,
-                        args = {
-                            resetPosition = {
-                                name = "Reset",
-                                desc = "Resets the settings of the spells/classes to their default.",
-                                type = "execute",
-                                order = 1,
-                                func = function ()
-                                    local useGreater = self.db.profile.spells.useGreater
-                                    wipe(self.db.profile.spells)
-                                    self.db.profile.spells.useGreater = useGreater
+                order = 1 + i,
+                args = {}
+            }
+
+            for _, blessing in ipairs(BlessingHelper.Blessings) do
+                config.args.spells.args[class].args[blessing] = {
+                    name = blessing,
+                    type = "group",
+                    inline = true,
+                    order = self.db.profile.spells[class][blessing].priority,
+                    args = {
+                        enabled = {
+                            name = "Enabled",
+                            desc = "Whether the buff is allowed or not for this class.",
+                            type = "toggle",
+                            order = 1,
+                            set = function (_, value) self.db.profile.spells[class][blessing].enabled = value end,
+                            get = function () return self.db.profile.spells[class][blessing].enabled end
+                        },
+                        priority = {
+                            name = "Priority",
+                            desc = "The priority of the buff, lower number means it will be sooner selected to be cast on the unit.",
+                            type = "range",
+                            step = 1,
+                            min = 1,
+                            max = #BlessingHelper.Blessings,
+                            order = 2,
+                            set = function (_, value)
+                                SetPriority(class, blessing, value)
+                                AddSpells()
+                            end,
+                            get = function () return self.db.profile.spells[class][blessing].priority end
+                        },
+                        up = {
+                            name = "Up",
+                            type = "execute",
+                            order = 3,
+                            func = function ()
+                                SetPriority(class, blessing, self.db.profile.spells[class][blessing].priority - 1)
+                                AddSpells()
+                            end
+                        },
+                        down = {
+                            name = "Down",
+                            type = "execute",
+                            order = 4,
+                            func = function ()
+                                SetPriority(class, blessing, self.db.profile.spells[class][blessing].priority + 1)
+                                AddSpells()
+                            end
+                        }
+                    }
+                }
+            end
+        end
+    end
+    AddSpells()
+
+    local function AddOverrides()
+        config.args.overrides = {
+            name = "Spell overrides",
+            type = "group",
+            order = 5,
+            args = {
+                enable = {
+                    name = "Enable",
+                    desc = "Whether the overrides are enabled or not.",
+                    type = "toggle",
+                    order = 1,
+                    set = function (_, value) self.db.profile.overridesConfig.enable = value end,
+                    get = function () return self.db.profile.overridesConfig.enable end
+                },
+                add = {
+                    name = "Add",
+                    type = "group",
+                    inline = true,
+                    order = 2,
+                    args = {
+                        name = {
+                            name = "Name",
+                            desc = "The name of the character.",
+                            type = "input",
+                            order = 1,
+                            set = function (_, value)
+                                self.db.profile.overridesConfig.name = value
+                            end,
+                            get = function () return self.db.profile.overridesConfig.name end
+                        },
+                        getTarget = {
+                            name = "Get target",
+                            desc = "Gets the name of the current target or the player if no target.",
+                            type = "execute",
+                            order = 2,
+                            func = function () self.db.profile.overridesConfig.name = UnitName("target") or UnitName("player") end
+                        },
+                        add = {
+                            name = "Add",
+                            desc = "Adds a new override with the current name.",
+                            type = "execute",
+                            order = 3,
+                            func = function ()
+                                if not self.Contains(self.db.profile.overridesConfig.names, self.db.profile.overridesConfig.name) then
+                                    table.insert(self.db.profile.overridesConfig.names, self.db.profile.overridesConfig.name)
+                                    AddOverrides()
                                 end
-                            }
+                                self.db.profile.overridesConfig.name = ""
+                            end
+                        }
+                    }
+                },
+                special = {
+                    name = "Special",
+                    type = "group",
+                    inline = true,
+                    order = 3,
+                    args = {
+                        resetPosition = {
+                            name = "Reset",
+                            desc = "Resets the settings of the overrides to their default.",
+                            type = "execute",
+                            order = 1,
+                            func = function ()
+                                self.db.profile.overridesConfig.enable = false
+                                self.db.profile.overridesConfig.name = nil
+                                wipe(self.db.profile.overridesConfig.names)
+                                wipe(self.db.profile.overrides)
+                                AddOverrides()
+                            end
                         }
                     }
                 }
             }
         }
-    }
 
-    local function SetPriority(class, blessing, new)
-        if new >= 1 and new <= #self.Blessings then
-            local old = self.db.profile.spells[class][blessing].priority
+        -- Moves all priorities of blessings down/up when one blessing is moved to a specific priority
+        local function SetPriority(name, blessing, new)
+            if new >= 1 and new <= #self.Blessings then
+                local old = self.db.profile.overrides[name][blessing].priority
 
-            if old ~= new then
-               local buf = {}
-                for k, v in pairs(self.db.profile.spells[class]) do
-                    table.insert(buf, {k = k, v = v})
-                end
-
-                if old < new then
-                    table.sort(buf, function (a, b) return a.v.priority < b.v.priority end)
-                    for _, kv in ipairs(buf) do
-                        if kv.v.priority > old and kv.v.priority <= new then
-                            kv.v.priority = kv.v.priority - 1
+                if old ~= new then
+                local buf = {}
+                    for k, v in pairs(self.db.profile.overrides[name]) do
+                        if k:lower() ~= "enabled" then
+                            table.insert(buf, {k = k, v = v})
                         end
                     end
-                else
-                    table.sort(buf, function (a, b) return a.v.priority > b.v.priority end)
-                    for _, kv in ipairs(buf) do
-                        if kv.v.priority < old and kv.v.priority >= new then
-                            kv.v.priority = kv.v.priority + 1
+
+                    if old < new then
+                        table.sort(buf, function (a, b) return a.v.priority < b.v.priority end)
+                        for _, kv in ipairs(buf) do
+                            if kv.v.priority > old and kv.v.priority <= new then
+                                kv.v.priority = kv.v.priority - 1
+                            end
+                        end
+                    else
+                        table.sort(buf, function (a, b) return a.v.priority > b.v.priority end)
+                        for _, kv in ipairs(buf) do
+                            if kv.v.priority < old and kv.v.priority >= new then
+                                kv.v.priority = kv.v.priority + 1
+                            end
                         end
                     end
-                end
 
-                self.db.profile.spells[class][blessing].priority = new
+                    self.db.profile.overrides[name][blessing].priority = new
+                end
             end
         end
-    end
 
-    for i, class in ipairs(BlessingHelper.Classes) do
-        local args = {}
-
-        for _, blessing in ipairs(BlessingHelper.Blessings) do
-            args[blessing] = {
-                name = blessing,
+        local i = 1
+        for _, name in ipairs(self.db.profile.overridesConfig.names) do
+            config.args.overrides.args[name] = {
+                name = name,
                 type = "group",
-                inline = true,
-                order = self.db.profile.spells[class][blessing].priority,
+                order = 3 + i,
                 args = {
                     enabled = {
                         name = "Enabled",
-                        desc = "Whether the buff is allowed or not for this class.",
+                        desc = "Whether the override is active or not for this name.",
                         type = "toggle",
                         order = 1,
-                        set = function (_, value) self.db.profile.spells[class][blessing].enabled = value end,
-                        get = function () return self.db.profile.spells[class][blessing].enabled end
-                    },
-                    priority = {
-                        name = "Priority",
-                        desc = "The priority of the buff, lower number means it will be sooner selected to be cast on the class.",
-                        type = "range",
-                        step = 1,
-                        min = 1,
-                        max = #BlessingHelper.Blessings,
-                        order = 2,
-                        set = function (_, value) SetPriority(class, blessing, value) end,
-                        get = function () return self.db.profile.spells[class][blessing].priority end
-                    },
-                    up = {
-                        name = "Up",
-                        type = "execute",
-                        order = 3,
-                        func = function () SetPriority(class, blessing, self.db.profile.spells[class][blessing].priority - 1) end
-                    },
-                    down = {
-                        name = "Down",
-                        type = "execute",
-                        order = 4,
-                        func = function () SetPriority(class, blessing, self.db.profile.spells[class][blessing].priority + 1) end
+                        set = function (_, value) self.db.profile.overrides[name].enabled = value end,
+                        get = function () return self.db.profile.overrides[name].enabled end
                     }
                 }
             }
-        end
 
-        config.args.spells.args[class] = {
-            name = class,
-            type = "group",
-            order = 1 + i,
-            args = args
-        }
+            for _, blessing in ipairs(BlessingHelper.Blessings) do
+                config.args.overrides.args[name].args[blessing] = {
+                    name = blessing,
+                    type = "group",
+                    inline = true,
+                    order = self.db.profile.overrides[name][blessing].priority,
+                    args = {
+                        enabled = {
+                            name = "Enabled",
+                            desc = "Whether the buff is allowed or not for this name.",
+                            type = "toggle",
+                            order = 1,
+                            set = function (_, value) self.db.profile.overrides[name][blessing].enabled = value end,
+                            get = function () return self.db.profile.overrides[name][blessing].enabled end
+                        },
+                        priority = {
+                            name = "Priority",
+                            desc = "The priority of the buff, lower number means it will be sooner selected to be cast on the unit.",
+                            type = "range",
+                            step = 1,
+                            min = 1,
+                            max = #BlessingHelper.Blessings,
+                            order = 2,
+                            set = function (_, value)
+                                SetPriority(name, blessing, value)
+                                AddOverrides()
+                            end,
+                            get = function () return self.db.profile.overrides[name][blessing].priority end
+                        },
+                        up = {
+                            name = "Up",
+                            type = "execute",
+                            order = 3,
+                            func = function ()
+                                SetPriority(name, blessing, self.db.profile.overrides[name][blessing].priority - 1)
+                                AddOverrides()
+                            end
+                        },
+                        down = {
+                            name = "Down",
+                            type = "execute",
+                            order = 4,
+                            func = function ()
+                                SetPriority(name, blessing, self.db.profile.overrides[name][blessing].priority + 1)
+                                AddOverrides()
+                            end
+                        }
+                    }
+                }
+            end
+
+            config.args.overrides.args[name].args.remove = {
+                name = "Remove",
+                type = "execute",
+                order = #self.Blessings + 1,
+                func = function ()
+                    self.db.profile.overrides[name] = nil
+                    local j = 1
+                    while j <= #self.db.profile.overridesConfig.names do
+                        if self.db.profile.overridesConfig.names[j] == name then
+                            table.remove(self.db.profile.overridesConfig.names, j)
+                        else
+                            j = j + 1
+                        end
+                    end
+                    AddOverrides()
+                end
+            }
+
+            i = i + 1
+        end
     end
+    AddOverrides()
 
     config.args.profiles = LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db)
 
