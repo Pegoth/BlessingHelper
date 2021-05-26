@@ -40,6 +40,10 @@ function BlessingHelperFrameTemplate_OnLoad(self)
         for _, f in ipairs(self.Units) do
             if not UnitExists(f.Unit) then
                 f:Hide()
+
+                -- Move non-visible units out of bounds in case they join mid-combat (this prevents overlaps in combat)
+                f:ClearAllPoints()
+                f:SetPoint("TOPLEFT", self, "TOPLEFT", -9999, 9999)
             else
                 visibleCount = visibleCount + 1
                 f:Show()

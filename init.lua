@@ -438,6 +438,43 @@ function BlessingHelper:SetupConfig()
                         }
                     }
                 }
+            },
+            help = {
+                name = "Help",
+                type = "group",
+                order = 101,
+                args = {
+                    spell = {
+                        name = "Blessings",
+                        type = "header",
+                        order = 1
+                    },
+                    spellDesc = {
+                        name = "Which blessing will be cast is based on three factors (in order):\n  1.) If the unit already has a buff from the player or one expired it will be choosen.\n  2.) If the unit name exists in the Spell overrides (and both the Spell overrides and the specific override is enabled) that setting will be used.\n  3.) Based on the unit class from the Spells settings.",
+                        type = "description",
+                        order = 2
+                    },
+                    buttons = {
+                        name = "Buttons",
+                        type = "header",
+                        order = 3
+                    },
+                    buttonsDesc = {
+                        name = "There are 3 mouse button action available for each unit:\n  Left click: Smart cast the blessing based on the description above.\n  Right click: Cast the blessing based on the points 2. and 3. mentioned above (meaning it will ignore the current buff).\n  Middle click: Target the unit",
+                        type = "description",
+                        order = 4
+                    },
+                    combat = {
+                        name = "Combat",
+                        type = "header",
+                        order = 5
+                    },
+                    combatDesc = {
+                        name = "In combat the logic is suspended, meaning that left and right click will cast the last set values.\nUnits leaving party/raid will be hidden during combat, but the main frame will not be re-formatted (leaving gaps).\nUnits joining party/raid during combat will not be displayed.",
+                        type = "description",
+                        order = 6
+                    }
+                }
             }
         }
     }
@@ -579,13 +616,13 @@ function BlessingHelper:SetupConfig()
             type = "group",
             order = 5,
             args = {
-                enable = {
-                    name = "Enable",
+                enabled = {
+                    name = "Enabled",
                     desc = "Whether the overrides are enabled or not.",
                     type = "toggle",
                     order = 1,
-                    set = function (_, value) self.db.profile.overridesConfig.enable = value end,
-                    get = function () return self.db.profile.overridesConfig.enable end
+                    set = function (_, value) self.db.profile.overridesConfig.enabled = value end,
+                    get = function () return self.db.profile.overridesConfig.enabled end
                 },
                 add = {
                     name = "Add",
@@ -637,7 +674,7 @@ function BlessingHelper:SetupConfig()
                             type = "execute",
                             order = 1,
                             func = function ()
-                                self.db.profile.overridesConfig.enable = false
+                                self.db.profile.overridesConfig.enabled = false
                                 self.db.profile.overridesConfig.name = nil
                                 wipe(self.db.profile.overridesConfig.names)
                                 wipe(self.db.profile.overrides)
@@ -706,7 +743,7 @@ function BlessingHelper:SetupConfig()
                     name = blessing,
                     type = "group",
                     inline = true,
-                    order = self.db.profile.overrides[name][blessing].priority,
+                    order = self.db.profile.overrides[name][blessing].priority + 1,
                     args = {
                         enabled = {
                             name = "Enabled",
