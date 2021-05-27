@@ -71,8 +71,6 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
         self.TimeSinceLastUpdate = 0
 
         if not UnitExists(self.Unit) then
-            self.LeftIcon:Hide()
-            self.RightIcon:Hide()
             self:SetName(self.Unit)
             self.Duration:SetText("00:00")
             self:SetBackdropColor(0, 0, 0, 1)
@@ -124,8 +122,18 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
             end
         end
 
-        -- Do not go further if in combat
-        if InCombatLockdown() then return end
+        if InCombatLockdown() then
+            -- Show icons if the clicks are set (in case unit went out of range and came back in combat)
+            if self.LastPrimary then
+                self.LeftIcon:Show()
+            end
+            if self.LastSecondary then
+                self.RightIcon:Show()
+            end
+
+            -- Do not go further if in combat
+            return
+        end
 
         local targetBlessingName, targetBlessingPriority, allowGreater
 
@@ -174,9 +182,11 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
             if not smallest and not self.Last then
                 self:SetAttribute("spell1", "")
                 self.LeftIcon:Hide()
+                self.LastPrimary = nil
             end
             self:SetAttribute("spell2",  "")
             self.RightIcon:Hide()
+            self.LastSecondary = nil
             return
         end
 
@@ -195,12 +205,14 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
         self.LeftIcon:SetTexture((select(3, GetSpellInfo(primary))))
         self:SetAttribute("spell1", primary)
         self.LeftIcon:Show()
+        self.LastPrimary = primary
 
         -- Set the secondary cast to always be based on priority
         ---@diagnostic disable-next-line: redundant-parameter
         self.RightIcon:SetTexture((select(3, GetSpellInfo(targetBlessingName))))
         self:SetAttribute("spell2",  targetBlessingName)
         self.RightIcon:Show()
+        self.LastSecondary = targetBlessingName
     end
 end
 -- endregion

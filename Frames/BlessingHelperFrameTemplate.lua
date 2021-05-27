@@ -8,6 +8,7 @@ end
 function BlessingHelperFrameTemplate_OnLoad(self)
     self:RegisterEvent("GROUP_ROSTER_UPDATE")
     self:RegisterEvent("UNIT_PET")
+    self:RegisterEvent("PLAYER_REGEN_ENABLED")
 
     self.Background:SetTexture("Interface\\Addons\\"..addon.."\\Textures\\Background")
     self.Background:ClearAllPoints()
@@ -36,29 +37,58 @@ function BlessingHelperFrameTemplate_OnLoad(self)
 
         local x = BlessingHelper.db.profile.horizontalPadding * 2
         local y = BlessingHelper.db.profile.verticalPadding * 2
+
+        local function next(counter)
+            y = y + BlessingHelper.db.profile.unitHeight + BlessingHelper.db.profile.verticalPadding
+            if counter % BlessingHelper.db.profile.maximumRows == 0 then
+                x = x + BlessingHelper.db.profile.unitWidth + BlessingHelper.db.profile.horizontalPadding
+                y = BlessingHelper.db.profile.verticalPadding * 2
+            end
+        end
+
+        local function moveAndSize(f)
+            f:SetWidth(BlessingHelper.db.profile.unitWidth)
+            f:SetHeight(BlessingHelper.db.profile.unitHeight)
+            f:ClearAllPoints()
+            f:SetPoint("TOPLEFT", self, "TOPLEFT", x, -y)
+            f:Redraw()
+        end
+
+        -- Go through all units and order visibles first
         local visibleCount = 0
+        local hiddens = {}
         for _, f in ipairs(self.Units) do
             if not UnitExists(f.Unit) then
                 f:Hide()
-
-                -- Move non-visible units out of bounds in case they join mid-combat (this prevents overlaps in combat)
-                f:ClearAllPoints()
-                f:SetPoint("TOPLEFT", self, "TOPLEFT", -9999, 9999)
+                table.insert(hiddens, f)
             else
                 visibleCount = visibleCount + 1
                 f:Show()
-                f:SetWidth(BlessingHelper.db.profile.unitWidth)
-                f:SetHeight(BlessingHelper.db.profile.unitHeight)
-                f:ClearAllPoints()
-                f:SetPoint("TOPLEFT", self, "TOPLEFT", x, -y)
-                f:Redraw()
-
-                y = y + BlessingHelper.db.profile.unitHeight + BlessingHelper.db.profile.verticalPadding
-                if visibleCount % BlessingHelper.db.profile.maximumRows == 0 then
-                    x = x + BlessingHelper.db.profile.unitWidth + BlessingHelper.db.profile.horizontalPadding
-                    y = BlessingHelper.db.profile.verticalPadding * 2
-                end
+                moveAndSize(f)
+                next(visibleCount)
             end
+        end
+
+        -- Order by weight (pets first)
+        table.sort(hiddens, function (a, b)
+            local apet = a.Unit:find("pet") ~= nil
+            local bpet = a.Unit:find("pet") ~= nil
+
+            if apet and not bpet then
+                return true
+            elseif not apet and bpet then
+                return false
+            else
+                return a.Weight < b.Weight
+            end
+        end)
+
+        -- Go through invisible units and order them
+        local invisibleCount = visibleCount
+        for _, f in ipairs(hiddens) do
+            invisibleCount = invisibleCount + 1
+            moveAndSize(f)
+            next(invisibleCount)
         end
 
         self.Background:SetColorTexture(BlessingHelper.db.profile.backgroundColor[1], BlessingHelper.db.profile.backgroundColor[2], BlessingHelper.db.profile.backgroundColor[3], BlessingHelper.db.profile.backgroundColor[4])
@@ -71,13 +101,16 @@ function BlessingHelperFrameTemplate_OnLoad(self)
     -- Create the units
     self.Units = {}
 
+    local weight = 1
     for _, unit in ipairs(BlessingHelper.UnitIds) do
         for i = 1, unit.max or 1 do
             local f = CreateFrame("button", nil, self, "BlessingHelperUnitTemplate")
+            f.Weight = weight
             f.Unit = unit.id..(unit.max and i or "")
             f:SetAttribute("unit", f.Unit)
             RegisterUnitWatch(f)
             table.insert(self.Units, f)
+            weight = weight + 1
         end
     end
 

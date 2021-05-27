@@ -484,7 +484,7 @@ function BlessingHelper:SetupConfig()
                         order = 5
                     },
                     combatDesc = {
-                        name = "In combat the logic is suspended, meaning that left and right click will cast the last set values.\nUnits leaving party/raid will be hidden during combat, but the main frame will not be re-formatted (leaving gaps).\nUnits joining party/raid during combat will not be displayed.",
+                        name = "In combat the logic is suspended, meaning that left and right click will cast the last set values.\nUnits leaving party/raid will be hidden during combat, but the main frame will not be re-formatted (leaving gaps).\nUnits joining party/raid during combat will be displayed, but can be out of frame when the frame is locked and the left/right click might not work or cast wrong blessings.",
                         type = "description",
                         order = 6
                     }
