@@ -1,21 +1,7 @@
 local addon = ...
 
 -- region BlessingHelperFrame events
-function BlessingHelperFrameTemplate_OnEvent(self)
-    self:Redraw()
-end
-
 function BlessingHelperFrameTemplate_OnLoad(self)
-    self:RegisterEvent("GROUP_ROSTER_UPDATE")
-    self:RegisterEvent("UNIT_PET")
-    self:RegisterEvent("PLAYER_REGEN_ENABLED")
-
-    self.Background:SetTexture("Interface\\Addons\\"..addon.."\\Textures\\Background")
-    self.Background:ClearAllPoints()
-    self.Background:SetPoint("TOPLEFT", self, "TOPLEFT", 0, 0)
-
-    self.IsMoving = false
-
     function self:ToggleLock()
         self:SetLock(not BlessingHelper.db.profile.isLocked)
     end
@@ -94,13 +80,22 @@ function BlessingHelperFrameTemplate_OnLoad(self)
         self.Background:SetColorTexture(BlessingHelper.db.profile.backgroundColor[1], BlessingHelper.db.profile.backgroundColor[2], BlessingHelper.db.profile.backgroundColor[3], BlessingHelper.db.profile.backgroundColor[4])
         self:SetWidth(BlessingHelper.db.profile.horizontalPadding * 2 + (BlessingHelper.db.profile.unitWidth + BlessingHelper.db.profile.horizontalPadding) * math.ceil((BlessingHelper.db.profile.isLocked and visibleCount or BlessingHelper.NumUnitIds) / BlessingHelper.db.profile.maximumRows))
         self:SetHeight(BlessingHelper.db.profile.verticalPadding * 2 + (BlessingHelper.db.profile.unitHeight + BlessingHelper.db.profile.verticalPadding) * (BlessingHelper.db.profile.isLocked and (math.min(visibleCount, BlessingHelper.db.profile.maximumRows)) or BlessingHelper.db.profile.maximumRows))
-        self.Background:SetWidth(self:GetWidth())
-        self.Background:SetHeight(self:GetHeight())
     end
 
-    -- Create the units
+    self:ClearAllPoints()
+    self:SetPoint(BlessingHelper.db.profile.mainFrameAnchor.point, UIParent, BlessingHelper.db.profile.mainFrameAnchor.relativePoint, BlessingHelper.db.profile.mainFrameAnchor.x, BlessingHelper.db.profile.mainFrameAnchor.y)
+
+    if BlessingHelper.db.profile.isLocked then
+        self:EnableMouse(false)
+    else
+        self:EnableMouse(true)
+    end
+
+    self.Background:SetTexture("Interface\\Addons\\"..addon.."\\Textures\\Background")
+    self.IsMoving = false
     self.Units = {}
 
+    -- Create unit frames
     local weight = 1
     for _, unit in ipairs(BlessingHelper.UnitIds) do
         for i = 1, unit.max or 1 do
@@ -115,14 +110,20 @@ function BlessingHelperFrameTemplate_OnLoad(self)
     end
 
     self:Redraw()
+
+    self:RegisterEvent("GROUP_ROSTER_UPDATE")
+    self:RegisterEvent("UNIT_PET")
+    self:RegisterEvent("PLAYER_REGEN_ENABLED")
+end
+
+function BlessingHelperFrameTemplate_OnEvent(self)
+    self:Redraw()
 end
 
 function BlessingHelperFrameTemplate_OnMouseDown(self, button)
     if button == "LeftButton" then
-        if not BlessingHelper.db.profile.isLocked then
-            self:StartMoving()
-            self.IsMoving = true
-        end
+        self:StartMoving()
+        self.IsMoving = true
     end
 end
 
@@ -132,6 +133,7 @@ function BlessingHelperFrameTemplate_OnMouseUp(self)
         self.IsMoving = false
 
         BlessingHelper.db.profile.mainFrameAnchor.point, _, BlessingHelper.db.profile.mainFrameAnchor.relativePoint, BlessingHelper.db.profile.mainFrameAnchor.x, BlessingHelper.db.profile.mainFrameAnchor.y = self:GetPoint(1)
+        LibStub("AceConfigRegistry-3.0"):NotifyChange(addon)
     end
 end
 -- endregion

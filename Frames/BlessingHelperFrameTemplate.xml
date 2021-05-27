@@ -1,9 +1,13 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/ ..\FrameXML\UI.xsd">
-    <Frame name="BlessingHelperFrameTemplate" virtual="true" frameStrata="HIGH" enableMouse="true" movable="true" clampedToScreen="true">
+    <Frame name="BlessingHelperFrameTemplate" virtual="true" frameStrata="HIGH" enableMouse="true" movable="true">
         <Layers>
             <Layer level="BACKGROUND">
                 <Texture parentKey="Background">
+                    <Points>
+                        <Point point="TOPLEFT" />
+                        <Point point="BOTTOMRIGHT" />
+                    </Points>
                 </Texture>
             </Layer>
         </Layers>

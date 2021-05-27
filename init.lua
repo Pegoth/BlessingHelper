@@ -217,11 +217,43 @@ function BlessingHelper:SetupConfig()
                         end,
                         get = function () return self.db.profile.maximumRows end
                     },
+                    x = {
+                        name = "X",
+                        desc = "The position of the frame.",
+                        type = "range",
+                        step = 1,
+                        softMin = -math.floor(UIParent:GetWidth()),
+                        softMax = math.floor(UIParent:GetWidth()),
+                        order = 3,
+                        set = function (_, value)
+                            self.db.profile.mainFrameAnchor.x = value
+
+                            self.Frame:ClearAllPoints()
+                            self.Frame:SetPoint(self.db.profile.mainFrameAnchor.point, UIParent, self.db.profile.mainFrameAnchor.relativePoint, self.db.profile.mainFrameAnchor.x, self.db.profile.mainFrameAnchor.y)
+                        end,
+                        get = function () return self.db.profile.mainFrameAnchor.x end
+                    },
+                    y = {
+                        name = "Y",
+                        desc = "The position of the frame.",
+                        type = "range",
+                        step = 1,
+                        softMin = -math.floor(UIParent:GetHeight()),
+                        softMax = math.floor(UIParent:GetHeight()),
+                        order = 4,
+                        set = function (_, value)
+                            self.db.profile.mainFrameAnchor.y = value
+
+                            self.Frame:ClearAllPoints()
+                            self.Frame:SetPoint(self.db.profile.mainFrameAnchor.point, UIParent, self.db.profile.mainFrameAnchor.relativePoint, self.db.profile.mainFrameAnchor.x, self.db.profile.mainFrameAnchor.y)
+                        end,
+                        get = function () return self.db.profile.mainFrameAnchor.y end
+                    },
                     special = {
                         name = "Special",
                         type = "group",
                         inline = true,
-                        order = 3,
+                        order = 5,
                         args = {
                             resetPosition = {
                                 name = "Reset position",
@@ -487,7 +519,17 @@ function BlessingHelper:SetupConfig()
                         name = "In combat the logic is suspended, meaning that left and right click will cast the last set values.\nUnits leaving party/raid will be hidden during combat, but the main frame will not be re-formatted (leaving gaps).\nUnits joining party/raid during combat will be displayed, but can be out of frame when the frame is locked and the left/right click might not work or cast wrong blessings.",
                         type = "description",
                         order = 6
-                    }
+                    },
+                    other = {
+                        name = "Other",
+                        type = "header",
+                        order = 7
+                    },
+                    otherDesc = {
+                        name = "The unlocked frame shows the size of maximum amount of units visible at once including pets. In any normal raid/party that size will never be reached.",
+                        type = "description",
+                        order = 8
+                    },
                 }
             }
         }
@@ -869,8 +911,6 @@ end
 
 function BlessingHelper:SetupFrame()
     self.Frame = CreateFrame("frame", nil, UIParent, "BlessingHelperFrameTemplate")
-    self.Frame:ClearAllPoints()
-    self.Frame:SetPoint(self.db.profile.mainFrameAnchor.point, UIParent, self.db.profile.mainFrameAnchor.relativePoint, self.db.profile.mainFrameAnchor.x, self.db.profile.mainFrameAnchor.y)
 
     if not self.db.profile.enabled then
         self.Frame:Hide()
@@ -884,6 +924,11 @@ function BlessingHelper:SetupMinimapIcon()
             text = addon,
             icon = 135995,
             OnClick = function(_, button)
+                if InCombatLockdown() then
+                    print("\124cffffff00"..addon.."\124r: Cannot show settings or toggle frame in combat.")
+                    return
+                end
+
                 if button == "LeftButton" then
                     self.db.profile.enabled = not self.db.profile.enabled
                     if self.db.profile.enabled then
