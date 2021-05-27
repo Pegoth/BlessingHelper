@@ -1,8 +1,13 @@
 {
+    "Lua.runtime.version": "Lua 5.1",
     "Lua.diagnostics.globals": [
         "InfinitySearch",
-        "CLASS_ABBR",
         "LibStub",
-        "RegisterUnitWatch"
+        "RegisterUnitWatch",
+        "CLASS_SORT_ORDER",
+        "LOCALIZED_CLASS_NAMES_MALE"
+    ],
+    "Lua.diagnostics.disable": [
+        "redundant-parameter"
     ]
 }

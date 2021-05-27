@@ -4,51 +4,32 @@ local media = LibStub("LibSharedMedia-3.0")
 function BlessingHelperUnitTemplate_OnLoad(self)
     BlessingHelper.CreateBackdrop(self, 0, 0, 0, 1)
 
-    function self:Contains(blessings, blessing, own)
-        for i = 1, #blessings do
-            if blessings[i].name:find(blessing) ~= nil and (own == nil or own == true and blessings[i].unitCaster == "player" or own == false and blessings[i].unitCaster ~= "player") then
-                return blessing, blessings[i].unitCaster == "player"
-            end
-        end
-    end
-
     function self:IsPetUnit()
         return self.Unit:lower():find("pet") ~= nil
     end
-
     function self:Blessings(own)
         local buf = {}
 
         local i = 1
-        local name, icon, _, _, duration, expirationTime, unitCaster = UnitBuff(self.Unit, i)
+        local name, _, _, _, duration, expirationTime, unitCaster = UnitBuff(self.Unit, i)
         while name do
-            if name:find("Blessing of ") ~= nil then
+            local blessing = BlessingHelper:IsBlessing(name)
+            if blessing then
                 if own == nil or own == true and unitCaster == "player" or own == false and unitCaster ~= "player" then
-                    table.insert(buf, {
-                        name = name,
-                        icon = icon,
-                        duration = duration,
-                        expirationTime = expirationTime,
-                        unitCaster = unitCaster:lower()
-                    })
+                    local copy = BlessingHelper.Blessing:Copy(blessing)
+                    copy.isGreater = copy.greater.name == name
+                    copy.duration = duration
+                    copy.expirationTime = expirationTime
+                    copy.unitCaster = unitCaster:lower()
+                    table.insert(buf, copy)
                 end
             end
             i = i + 1
-            name, icon, _, _, duration, expirationTime, unitCaster = UnitBuff(self.Unit, i)
+            name, _, _, _, duration, expirationTime, unitCaster = UnitBuff(self.Unit, i)
         end
 
         return buf
     end
-
-    function self:SetName(name)
-        if BlessingHelper.db.profile.unitLength <= 0 then
-            self.Name:SetText("")
-            return
-        end
-
-        self.Name:SetText(name:sub(1, BlessingHelper.db.profile.unitLength))
-    end
-
     function self:Redraw()
         self.LeftIcon:SetWidth(BlessingHelper.db.profile.unitHeight / 2)
         self.LeftIcon:SetHeight(BlessingHelper.db.profile.unitHeight)
@@ -70,17 +51,23 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
     if self.TimeSinceLastUpdate > 0.1 then
         self.TimeSinceLastUpdate = 0
 
+        -- Update unit name
+        local name = UnitName(self.Unit) or self.Unit
+        if BlessingHelper.db.profile.unitLength <= 0 then
+            self.Name:SetText("")
+        else
+            self.Name:SetText(name:sub(1, BlessingHelper.db.profile.unitLength))
+        end
+
+        -- Do nothing special if unit does not exists
         if not UnitExists(self.Unit) then
-            self:SetName(self.Unit)
             self.Duration:SetText("00:00")
             self:SetBackdropColor(0, 0, 0, 1)
             return
         end
 
-        local name = UnitName(self.Unit)
-        self:SetName(name)
-
-        if not IsSpellInRange(BlessingHelper.RangeCheckSpell, self.Unit) then
+        -- Do nothing special if not in range
+        if not BlessingHelper.RangeCheckSpell:IsInRange(self.Unit) then
             self.LeftIcon:Hide()
             self.RightIcon:Hide()
             self.Duration:SetText("00:00")
@@ -88,25 +75,26 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
             return
         end
 
-        local blessings = self:Blessings()
+        -- Get all blessings currently on the unit
+        local currentBlessings = self:Blessings()
 
         -- Get the current, smallest blessing that is from the player
-        local smallest = nil
-        for i = 1, #blessings do
-            if blessings[i].unitCaster == "player" and (smallest == nil or blessings[i].expirationTime < smallest.expirationTime) then
-                smallest = blessings[i]
+        local currentBlessing = nil
+        for i = 1, #currentBlessings do
+            if currentBlessings[i].unitCaster == "player" and (currentBlessing == nil or currentBlessings[i].expirationTime < currentBlessing.expirationTime) then
+                currentBlessing = currentBlessings[i]
             end
         end
 
-        if smallest then
+        if currentBlessing then
             -- Update display based on the current blessing
-            local exp = smallest.expirationTime - GetTime()
+            local exp = currentBlessing.expirationTime - GetTime()
             local m = math.floor(exp / 60)
             local s = math.floor(exp - m * 60)
 
             self.Duration:SetText(string.format("%02.0f:%02.0f", m, s))
             self:SetBackdropColor(BlessingHelper.db.profile.buffedColor[1], BlessingHelper.db.profile.buffedColor[2], BlessingHelper.db.profile.buffedColor[3], 1)
-            self.Last = smallest.name:gsub("Greater ", "")
+            self.Last = currentBlessing
         else
             self.Duration:SetText("00:00")
 
@@ -117,17 +105,17 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
             end
 
             -- Remove the last used when someone else used it on the unit
-            if self.Last and self:Contains(blessings, self.Last, false) then
+            if self.Last and self.Last:Contains(currentBlessings, true) then
                 self.Last = nil
             end
         end
 
         if InCombatLockdown() then
             -- Show icons if the clicks are set (in case unit went out of range and came back in combat)
-            if self.LastPrimary then
+            if self.HasPrimary then
                 self.LeftIcon:Show()
             end
-            if self.LastSecondary then
+            if self.HasSecondary then
                 self.RightIcon:Show()
             end
 
@@ -135,84 +123,69 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
             return
         end
 
-        local targetBlessingName, targetBlessingPriority, allowGreater
+        local targetBlessing, targetBlessingPriority
 
         -- Check if a name override exists
         if BlessingHelper.db.profile.overridesConfig.enabled and BlessingHelper.Contains(BlessingHelper.db.profile.overridesConfig.names, name) and BlessingHelper.db.profile.overrides[name].enabled then
             -- Get available blessings
             for _, blessing in ipairs(BlessingHelper.Blessings) do
-                ---@diagnostic disable-next-line: redundant-parameter
-                local usable, noMana = IsUsableSpell(blessing)
-                local enabled = BlessingHelper.db.profile.overrides[name][blessing].enabled
-                local priority = BlessingHelper.db.profile.overrides[name][blessing].priority
-                if enabled and (usable or noMana) and not self:Contains(blessings, blessing, false) then
+                local enabled = BlessingHelper.db.profile.overrides[name][blessing.key].enabled
+                local priority = BlessingHelper.db.profile.overrides[name][blessing.key].priority
+                if enabled and blessing:IsUsable() and not blessing:Contains(currentBlessings, false) then
                     if targetBlessingPriority == nil or targetBlessingPriority > priority then
-                        targetBlessingName = blessing
+                        targetBlessing = BlessingHelper.Blessing:Copy(blessing)
                         targetBlessingPriority = priority
                     end
                 end
             end
 
             -- Disallow greater blessings for personal buffs
-            allowGreater = false
+            targetBlessing.isGreater = false
         else
             -- Get the class of the unit
             local class = select(2, UnitClass(self.Unit))
-            class = class:sub(1, 1)..class:sub(2):lower()
 
             -- Get available blessings
             for _, blessing in ipairs(BlessingHelper.Blessings) do
-                ---@diagnostic disable-next-line: redundant-parameter
-                local usable, noMana = IsUsableSpell(blessing)
-                local enabled = BlessingHelper.db.profile.spells[class][blessing].enabled
-                local priority = BlessingHelper.db.profile.spells[class][blessing].priority
-                if enabled and (usable or noMana) and not self:Contains(blessings, blessing, false) then
+                local enabled = BlessingHelper.db.profile.spells[class][blessing.key].enabled
+                local priority = BlessingHelper.db.profile.spells[class][blessing.key].priority
+                if enabled and blessing:IsUsable() and not blessing:Contains(currentBlessings, false) then
                     if targetBlessingPriority == nil or targetBlessingPriority > priority then
-                        targetBlessingName = blessing
+                        targetBlessing = BlessingHelper.Blessing:Copy(blessing)
                         targetBlessingPriority = priority
                     end
                 end
             end
 
-            allowGreater = true
+            targetBlessing.isGreater = BlessingHelper.db.profile.spells.useGreater
         end
 
         -- No blessing found
-        if not targetBlessingName then
-            if not smallest and not self.Last then
+        if not targetBlessing then
+            if not currentBlessing and not self.Last then
                 self:SetAttribute("spell1", "")
                 self.LeftIcon:Hide()
-                self.LastPrimary = nil
+                self.HasPrimary = nil
             end
             self:SetAttribute("spell2",  "")
             self.RightIcon:Hide()
-            self.LastSecondary = nil
+            self.HasSecondary = nil
             return
         end
 
-        if allowGreater and BlessingHelper.db.profile.spells.useGreater then
-            ---@diagnostic disable-next-line: redundant-parameter
-            local usable, noMana = IsUsableSpell("Greater "..targetBlessingName)
-
-            if usable or noMana then
-                targetBlessingName = "Greater "..targetBlessingName
-            end
-        end
-
         -- Update primary cast
-        local primary = smallest and smallest.name or self.Last or targetBlessingName
-        ---@diagnostic disable-next-line: redundant-parameter
-        self.LeftIcon:SetTexture((select(3, GetSpellInfo(primary))))
-        self:SetAttribute("spell1", primary)
+        local primary = (currentBlessing or self.Last or targetBlessing):Spell()
         self.LeftIcon:Show()
-        self.LastPrimary = primary
+        self.LeftIcon:SetTexture(primary.icon)
+        self:SetAttribute("spell1", primary.name)
+        self.HasPrimary = true
 
         -- Set the secondary cast to always be based on priority
-        ---@diagnostic disable-next-line: redundant-parameter
-        self.RightIcon:SetTexture((select(3, GetSpellInfo(targetBlessingName))))
-        self:SetAttribute("spell2",  targetBlessingName)
+        local secondary = targetBlessing:Spell()
         self.RightIcon:Show()
-        self.LastSecondary = targetBlessingName
+        self.RightIcon:SetTexture(secondary.icon)
+        self:SetAttribute("spell2", secondary.name)
+        self.HasSecondary = true
     end
 end
 -- endregion

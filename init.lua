@@ -3,7 +3,9 @@ local addon = ...
 BlessingHelper = LibStub("AceAddon-3.0"):NewAddon(addon)
 
 function BlessingHelper:OnInitialize()
+    self:SetupClasses()
     self:SetupConstants()
+    self:SetupLocales()
     self:SetupHelpers()
     self:SetupDB()
     self:SetupConfig()
@@ -13,6 +15,69 @@ end
 
 function BlessingHelper:OnEnable()
     self:SetupFrame()
+end
+
+function BlessingHelper:SetupClasses()
+    self.Blessing = {}
+    function self.Blessing:New(key, normal, greater)
+        local buf = {
+            key = key,
+            normal = {
+                id = normal
+            },
+            greater = {
+                id = greater
+            }
+        }
+
+        buf.normal.name, _, buf.normal.icon = GetSpellInfo(normal)
+        buf.greater.name, _, buf.greater.icon = GetSpellInfo(greater)
+
+        setmetatable(buf, self)
+        self.__index = self
+        return buf
+    end
+    function self.Blessing:Copy(blessing)
+        local buf = {
+            key = blessing.key,
+            normal = {
+                id = blessing.normal.id,
+                icon = blessing.normal.icon
+            },
+            greater = {
+                id = blessing.greater.id,
+                icon = blessing.greater.icon
+            }
+        }
+
+        setmetatable(buf, self)
+        self.__index = self
+        return buf
+    end
+    function self.Blessing:Equals(buffName)
+        return self.normal.name == buffName or self.greater.name == buffName
+    end
+    function self.Blessing:IsUsable(greater)
+        local usable, noMana = IsUsableSpell(greater and self.greater.id or self.normal.id)
+        return usable or noMana
+    end
+    function self.Blessing:IsInRange(unit)
+        return IsSpellInRange(self.normal.name, unit)
+    end
+    function self.Blessing:Contains(blessings, own)
+        for i = 1, #blessings do
+            if own == nil or own == true and blessings[i].unitCaster == "player" or own == false and blessings[i].unitCaster ~= "player" then
+                if blessings[i].name == self.normal.name then
+                    return self.normal.name, blessings[i].unitCaster == "player"
+                elseif blessings[i].name == self.greater.name then
+                    return self.greater.name, blessings[i].unitCaster == "player"
+                end
+            end
+        end
+    end
+    function self.Blessing:Spell(allowGreater)
+        return (allowGreater or self.isGreater) and self:IsUsable(true) and self.greater or self.normal
+    end
 end
 
 function BlessingHelper:SetupConstants()
@@ -40,31 +105,20 @@ function BlessingHelper:SetupConstants()
             max = 40
         }
     }
-    self.Classes = {
-        "Druid",
-        "Hunter",
-        "Mage",
-        "Paladin",
-        "Priest",
-        "Rogue",
-        "Shaman",
-        "Warlock",
-        "Warrior"
-    }
+    self.NumUnitIds = #self.UnitIds
     self.Blessings = {
-        "Blessing of Kings",
-        "Blessing of Wisdom",
-        "Blessing of Might",
-        "Blessing of Light",
-        "Blessing of Salvation",
-        "Blessing of Sanctuary"
+        self.Blessing:New("Kings", 20217, 25898),
+        self.Blessing:New("Wisdom", 25290, 25918),
+        self.Blessing:New("Might", 25291, 25916),
+        self.Blessing:New("Light", 19979, 25890),
+        self.Blessing:New("Salvation", 1038, 25895),
+        self.Blessing:New("Sanctuary", 20914, 25899)
     }
-    self.RangeCheckSpell = "Blessing of Wisdom"
+    self.RangeCheckSpell = self.Blessings[1]
+end
 
-    self.NumUnitIds = 0
-    for _, unitid in ipairs(self.UnitIds) do
-        self.NumUnitIds = self.NumUnitIds + (unitid.max or 1)
-    end
+function BlessingHelper:SetupLocales()
+    self.L = LibStub("AceLocale-3.0"):GetLocale(addon)
 end
 
 function BlessingHelper:SetupHelpers()
@@ -81,7 +135,6 @@ function BlessingHelper:SetupHelpers()
 
         return false
     end
-
     function self.CreateBackdrop(frame, r, g, b, a)
         frame:SetBackdrop({
             bgFile = "Interface\\Addons\\"..addon.."\\Textures\\Background",
@@ -93,6 +146,13 @@ function BlessingHelper:SetupHelpers()
             }
         })
         frame:SetBackdropColor(r, g, b, a)
+    end
+    function self:IsBlessing(buffName)
+        for _, blessing in ipairs(self.Blessings) do
+            if blessing:Equals(buffName) then
+                return blessing
+            end
+        end
     end
 end
 
@@ -121,7 +181,7 @@ function BlessingHelper:SetupDB()
                 ["*"] = {}
             },
             overridesConfig = {
-                enabled = false,
+                enabled = true,
                 name = "",
                 names = {}
             },
@@ -140,11 +200,11 @@ function BlessingHelper:SetupDB()
     }
 
     for priority, blessing in ipairs(self.Blessings) do
-        defaults.profile.spells["*"][blessing] = {
+        defaults.profile.spells["*"][blessing.key] = {
             enabled = true,
             priority = priority
         }
-        defaults.profile.overrides["*"][blessing] = {
+        defaults.profile.overrides["*"][blessing.key] = {
             enabled = true,
             priority = priority
         }
@@ -221,7 +281,6 @@ function BlessingHelper:SetupConfig()
                         name = "X",
                         desc = "The position of the frame.",
                         type = "range",
-                        step = 1,
                         softMin = -math.floor(UIParent:GetWidth()),
                         softMax = math.floor(UIParent:GetWidth()),
                         order = 3,
@@ -237,7 +296,6 @@ function BlessingHelper:SetupConfig()
                         name = "Y",
                         desc = "The position of the frame.",
                         type = "range",
-                        step = 1,
                         softMin = -math.floor(UIParent:GetHeight()),
                         softMax = math.floor(UIParent:GetHeight()),
                         order = 4,
@@ -289,7 +347,6 @@ function BlessingHelper:SetupConfig()
                                 name = "Unit width",
                                 desc = "The width of the unit.",
                                 type = "range",
-                                step = 1,
                                 min = 1,
                                 softMax = 1024,
                                 order = 1,
@@ -303,7 +360,6 @@ function BlessingHelper:SetupConfig()
                                 name = "Unit height",
                                 desc = "The height of the unit.",
                                 type = "range",
-                                step = 1,
                                 min = 1,
                                 softMax = 512,
                                 order = 2,
@@ -317,7 +373,6 @@ function BlessingHelper:SetupConfig()
                                 name = "Horizontal padding",
                                 desc = "The pixels between units on the Y coord.",
                                 type = "range",
-                                step = 1,
                                 min = 0,
                                 softMax = 10,
                                 order = 3,
@@ -331,7 +386,6 @@ function BlessingHelper:SetupConfig()
                                 name = "Vertical padding",
                                 desc = "The pixels between units on the Y coord.",
                                 type = "range",
-                                step = 1,
                                 min = 0,
                                 softMax = 10,
                                 order = 4,
@@ -604,28 +658,28 @@ function BlessingHelper:SetupConfig()
             end
         end
 
-        for i, class in ipairs(BlessingHelper.Classes) do
+        for i, class in ipairs(CLASS_SORT_ORDER) do
             config.args.spells.args[class] = {
-                name = class,
+                name = LOCALIZED_CLASS_NAMES_MALE[class],
                 type = "group",
                 order = 1 + i,
                 args = {}
             }
 
             for _, blessing in ipairs(BlessingHelper.Blessings) do
-                config.args.spells.args[class].args[blessing] = {
-                    name = blessing,
+                config.args.spells.args[class].args[blessing.key] = {
+                    name = blessing.normal.name,
                     type = "group",
                     inline = true,
-                    order = self.db.profile.spells[class][blessing].priority,
+                    order = self.db.profile.spells[class][blessing.key].priority,
                     args = {
                         enabled = {
                             name = "Enabled",
                             desc = "Whether the buff is allowed or not for this class.",
                             type = "toggle",
                             order = 1,
-                            set = function (_, value) self.db.profile.spells[class][blessing].enabled = value end,
-                            get = function () return self.db.profile.spells[class][blessing].enabled end
+                            set = function (_, value) self.db.profile.spells[class][blessing.key].enabled = value end,
+                            get = function () return self.db.profile.spells[class][blessing.key].enabled end
                         },
                         priority = {
                             name = "Priority",
@@ -636,17 +690,17 @@ function BlessingHelper:SetupConfig()
                             max = #BlessingHelper.Blessings,
                             order = 2,
                             set = function (_, value)
-                                SetPriority(class, blessing, value)
+                                SetPriority(class, blessing.key, value)
                                 AddSpells()
                             end,
-                            get = function () return self.db.profile.spells[class][blessing].priority end
+                            get = function () return self.db.profile.spells[class][blessing.key].priority end
                         },
                         up = {
                             name = "Up",
                             type = "execute",
                             order = 3,
                             func = function ()
-                                SetPriority(class, blessing, self.db.profile.spells[class][blessing].priority - 1)
+                                SetPriority(class, blessing.key, self.db.profile.spells[class][blessing.key].priority - 1)
                                 AddSpells()
                             end
                         },
@@ -655,7 +709,7 @@ function BlessingHelper:SetupConfig()
                             type = "execute",
                             order = 4,
                             func = function ()
-                                SetPriority(class, blessing, self.db.profile.spells[class][blessing].priority + 1)
+                                SetPriority(class, blessing.key, self.db.profile.spells[class][blessing.key].priority + 1)
                                 AddSpells()
                             end
                         }
@@ -730,8 +784,6 @@ function BlessingHelper:SetupConfig()
                             type = "execute",
                             order = 1,
                             func = function ()
-                                self.db.profile.overridesConfig.enabled = false
-                                self.db.profile.overridesConfig.name = nil
                                 wipe(self.db.profile.overridesConfig.names)
                                 wipe(self.db.profile.overrides)
                                 AddOverrides()
@@ -795,19 +847,19 @@ function BlessingHelper:SetupConfig()
             }
 
             for _, blessing in ipairs(BlessingHelper.Blessings) do
-                config.args.overrides.args[name].args[blessing] = {
-                    name = blessing,
+                config.args.overrides.args[name].args[blessing.key] = {
+                    name = blessing.normal.name,
                     type = "group",
                     inline = true,
-                    order = self.db.profile.overrides[name][blessing].priority + 1,
+                    order = self.db.profile.overrides[name][blessing.key].priority + 1,
                     args = {
                         enabled = {
                             name = "Enabled",
                             desc = "Whether the buff is allowed or not for this name.",
                             type = "toggle",
                             order = 1,
-                            set = function (_, value) self.db.profile.overrides[name][blessing].enabled = value end,
-                            get = function () return self.db.profile.overrides[name][blessing].enabled end
+                            set = function (_, value) self.db.profile.overrides[name][blessing.key].enabled = value end,
+                            get = function () return self.db.profile.overrides[name][blessing.key].enabled end
                         },
                         priority = {
                             name = "Priority",
@@ -818,17 +870,17 @@ function BlessingHelper:SetupConfig()
                             max = #BlessingHelper.Blessings,
                             order = 2,
                             set = function (_, value)
-                                SetPriority(name, blessing, value)
+                                SetPriority(name, blessing.key, value)
                                 AddOverrides()
                             end,
-                            get = function () return self.db.profile.overrides[name][blessing].priority end
+                            get = function () return self.db.profile.overrides[name][blessing.key].priority end
                         },
                         up = {
                             name = "Up",
                             type = "execute",
                             order = 3,
                             func = function ()
-                                SetPriority(name, blessing, self.db.profile.overrides[name][blessing].priority - 1)
+                                SetPriority(name, blessing.key, self.db.profile.overrides[name][blessing.key].priority - 1)
                                 AddOverrides()
                             end
                         },
@@ -837,7 +889,7 @@ function BlessingHelper:SetupConfig()
                             type = "execute",
                             order = 4,
                             func = function ()
-                                SetPriority(name, blessing, self.db.profile.overrides[name][blessing].priority + 1)
+                                SetPriority(name, blessing.key, self.db.profile.overrides[name][blessing.key].priority + 1)
                                 AddOverrides()
                             end
                         }
