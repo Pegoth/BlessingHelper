@@ -42,10 +42,12 @@ function BlessingHelper:SetupClasses()
             key = blessing.key,
             normal = {
                 id = blessing.normal.id,
+                name = blessing.normal.name,
                 icon = blessing.normal.icon
             },
             greater = {
                 id = blessing.greater.id,
+                name = blessing.greater.name,
                 icon = blessing.greater.icon
             }
         }
@@ -930,14 +932,14 @@ function BlessingHelper:SetupInfinitySearch()
     if InfinitySearch ~= nil then
         local aceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 
-        InfinitySearch:RegisterAddonFunction("Extras: "..addon, "Options", nil, function ()
+        InfinitySearch:RegisterAddonFunction("Extras: "..addon, self.L["infinitySearch.options"], nil, function ()
             LibStub("AceConfigDialog-3.0"):Open(addon)
         end)
-        InfinitySearch:RegisterAddonFunction("Extras: "..addon, "Lock", nil, function ()
+        InfinitySearch:RegisterAddonFunction("Extras: "..addon, self.L["infinitySearch.lock"], nil, function ()
             self.Frame:ToggleLock()
             aceConfigRegistry:NotifyChange(addon)
         end)
-        InfinitySearch:RegisterAddonFunction("Extras: "..addon, "Toggle", nil, function ()
+        InfinitySearch:RegisterAddonFunction("Extras: "..addon, self.L["infinitySearch.toggle"], nil, function ()
             self.db.profile.enabled = not self.db.profile.enabled
             if self.db.profile.enabled then
                 self.Frame:Show()
@@ -977,7 +979,7 @@ function BlessingHelper:SetupMinimapIcon()
             icon = 135995,
             OnClick = function(_, button)
                 if InCombatLockdown() then
-                    print("\124cffffff00"..addon.."\124r: Cannot show settings or toggle frame in combat.")
+                    print(self.L["minimap.incombat"])
                     return
                 end
 
@@ -995,8 +997,8 @@ function BlessingHelper:SetupMinimapIcon()
             end,
             OnTooltipShow = function (tooltip)
                 tooltip:AddLine(addon, 1, 1, 1)
-                tooltip:AddLine("\124cffffffffLeft click:\124r Toggle addon")
-                tooltip:AddLine("\124cffffffffRight click:\124r Show settings");
+                tooltip:AddLine(self.L["minimap.leftclick"])
+                tooltip:AddLine(self.L["minimap.rightclick"])
             end
         }),
         self.db.profile.minimap
