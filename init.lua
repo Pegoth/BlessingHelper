@@ -1,11 +1,11 @@
 local addon = ...
+local L = LibStub("AceLocale-3.0"):GetLocale(addon)
 
 BlessingHelper = LibStub("AceAddon-3.0"):NewAddon(addon)
 
 function BlessingHelper:OnInitialize()
     self:SetupClasses()
     self:SetupConstants()
-    self:SetupLocales()
     self:SetupHelpers()
     self:SetupDB()
     self:SetupConfig()
@@ -107,7 +107,6 @@ function BlessingHelper:SetupConstants()
             max = 40
         }
     }
-    self.NumUnitIds = #self.UnitIds
     self.Blessings = {
         self.Blessing:New("Kings", 20217, 25898),
         self.Blessing:New("Wisdom", 25290, 25918),
@@ -117,10 +116,23 @@ function BlessingHelper:SetupConstants()
         self.Blessing:New("Sanctuary", 20914, 25899)
     }
     self.RangeCheckSpell = self.Blessings[1]
-end
+    self.AnchorPoints = {
+        "TOPLEFT",
+        "TOP",
+        "TOPRIGHT",
+        "RIGHT",
+        "BOTTOMRIGHT",
+        "BOTTOM",
+        "BOTTOMLEFT",
+        "LEFT",
+        "CENTER"
+    }
 
-function BlessingHelper:SetupLocales()
-    self.L = LibStub("AceLocale-3.0"):GetLocale(addon)
+    -- Sum of all possible units
+    self.NumUnitIds = 0
+    for _, unitid in ipairs(self.UnitIds) do
+        self.NumUnitIds = self.NumUnitIds + (unitid.max or 1)
+    end
 end
 
 function BlessingHelper:SetupHelpers()
@@ -194,6 +206,7 @@ function BlessingHelper:SetupDB()
             },
             mainFrameAnchor = {
                 point = "CENTER",
+                relativeFrame = nil,
                 relativePoint = "CENTER",
                 x = 0,
                 y = 0
@@ -225,8 +238,8 @@ function BlessingHelper:SetupConfig()
         type = "group",
         args = {
             enabled = {
-                name = "Enabled",
-                desc = "Whether the frame is visible or not.",
+                name = L["config.enabled.name"],
+                desc = L["config.enabled.desc"],
                 type = "toggle",
                 order = 1,
                 set = function (_, value)
@@ -241,21 +254,21 @@ function BlessingHelper:SetupConfig()
                 get = function () return self.db.profile.enabled end
             },
             isLocked = {
-                name = "Locked",
-                desc = "Whether the moving/resizing frame is shown or not.",
+                name = L["config.isLocked.name"],
+                desc = L["config.isLocked.desc"],
                 type = "toggle",
                 order = 2,
                 set = function (_, value) self.Frame:SetLock(value) end,
                 get = function () return self.db.profile.isLocked end
             },
             frame = {
-                name = "Frame settings",
+                name = L["config.frame.name"],
                 type = "group",
                 order = 3,
                 args = {
                     backgroundColor = {
-                        name = "Background color",
-                        desc = "The color of the background.",
+                        name = L["config.frame.backgroundColor.name"],
+                        desc = L["config.frame.backgroundColor.desc"],
                         type = "color",
                         hasAlpha = true,
                         order = 1,
@@ -266,8 +279,8 @@ function BlessingHelper:SetupConfig()
                         get = function () return self.db.profile.backgroundColor[1], self.db.profile.backgroundColor[2], self.db.profile.backgroundColor[3], self.db.profile.backgroundColor[4] end
                     },
                     maximumRows = {
-                        name = "Maximum rows",
-                        desc = "The maximum amount of units to display in a column.",
+                        name = L["config.frame.maximumRows.name"],
+                        desc = L["config.frame.maximumRows.desc"],
                         type = "range",
                         step = 1,
                         min = 1,
@@ -279,55 +292,98 @@ function BlessingHelper:SetupConfig()
                         end,
                         get = function () return self.db.profile.maximumRows end
                     },
-                    x = {
-                        name = "X",
-                        desc = "The position of the frame.",
-                        type = "range",
-                        softMin = -math.floor(UIParent:GetWidth()),
-                        softMax = math.floor(UIParent:GetWidth()),
-                        order = 3,
-                        set = function (_, value)
-                            self.db.profile.mainFrameAnchor.x = value
-
-                            self.Frame:ClearAllPoints()
-                            self.Frame:SetPoint(self.db.profile.mainFrameAnchor.point, UIParent, self.db.profile.mainFrameAnchor.relativePoint, self.db.profile.mainFrameAnchor.x, self.db.profile.mainFrameAnchor.y)
-                        end,
-                        get = function () return self.db.profile.mainFrameAnchor.x end
-                    },
-                    y = {
-                        name = "Y",
-                        desc = "The position of the frame.",
-                        type = "range",
-                        softMin = -math.floor(UIParent:GetHeight()),
-                        softMax = math.floor(UIParent:GetHeight()),
-                        order = 4,
-                        set = function (_, value)
-                            self.db.profile.mainFrameAnchor.y = value
-
-                            self.Frame:ClearAllPoints()
-                            self.Frame:SetPoint(self.db.profile.mainFrameAnchor.point, UIParent, self.db.profile.mainFrameAnchor.relativePoint, self.db.profile.mainFrameAnchor.x, self.db.profile.mainFrameAnchor.y)
-                        end,
-                        get = function () return self.db.profile.mainFrameAnchor.y end
-                    },
-                    special = {
-                        name = "Special",
+                    position = {
+                        name = L["config.frame.position.name"],
                         type = "group",
                         inline = true,
-                        order = 5,
+                        order = 3,
                         args = {
-                            resetPosition = {
-                                name = "Reset position",
-                                desc = "Resets the position of the main frame.",
-                                type = "execute",
+                            point = {
+                                name = L["config.frame.position.point.name"],
+                                desc = L["config.frame.position.point.desc"],
+                                type = "select",
+                                values = function ()
+                                    local buf = {}
+                                    for _, point in ipairs(self.AnchorPoints) do
+                                        buf[point] = L["config.frame.position.pointValue."..point]
+                                    end
+                                    return buf
+                                end,
+                                style = "dropdown",
                                 order = 1,
+                                set = function (_, value)
+                                    self.db.profile.mainFrameAnchor.point = value
+                                    self.Frame:Reposition()
+                                end,
+                                get = function () return self.db.profile.mainFrameAnchor.point end
+                            },
+                            relativeFrame = {
+                                name = L["config.frame.position.relativeFrame.name"],
+                                desc = L["config.frame.position.relativeFrame.desc"],
+                                type = "input",
+                                order = 2,
+                                set = function (_, value)
+                                    self.db.profile.mainFrameAnchor.relativeFrame = value ~= "" and value or nil
+                                    self.Frame:Reposition()
+                                end,
+                                get = function () return self.db.profile.mainFrameAnchor.relativeFrame end
+                            },
+                            relativePoint = {
+                                name = L["config.frame.position.relativePoint.name"],
+                                desc = L["config.frame.position.relativePoint.desc"],
+                                type = "select",
+                                values = function ()
+                                    local buf = {}
+                                    for _, point in ipairs(self.AnchorPoints) do
+                                        buf[point] = L["config.frame.position.pointValue."..point]
+                                    end
+                                    return buf
+                                end,
+                                style = "dropdown",
+                                order = 1,
+                                set = function (_, value)
+                                    self.db.profile.mainFrameAnchor.relativePoint = value
+                                    self.Frame:Reposition()
+                                end,
+                                get = function () return self.db.profile.mainFrameAnchor.relativePoint end
+                            },
+                            x = {
+                                name = L["config.frame.position.x.name"],
+                                desc = L["config.frame.position.x.desc"],
+                                type = "range",
+                                softMin = -math.floor(UIParent:GetWidth()),
+                                softMax = math.floor(UIParent:GetWidth()),
+                                order = 4,
+                                set = function (_, value)
+                                    self.db.profile.mainFrameAnchor.x = value
+                                    self.Frame:Reposition()
+                                end,
+                                get = function () return self.db.profile.mainFrameAnchor.x end
+                            },
+                            y = {
+                                name = L["config.frame.position.y.name"],
+                                desc = L["config.frame.position.y.desc"],
+                                type = "range",
+                                softMin = -math.floor(UIParent:GetHeight()),
+                                softMax = math.floor(UIParent:GetHeight()),
+                                order = 5,
+                                set = function (_, value)
+                                    self.db.profile.mainFrameAnchor.y = value
+                                    self.Frame:Reposition()
+                                end,
+                                get = function () return self.db.profile.mainFrameAnchor.y end
+                            },
+                            resetPosition = {
+                                name = L["config.frame.position.resetPosition.name"],
+                                desc = L["config.frame.position.resetPosition.desc"],
+                                type = "execute",
                                 func = function ()
                                     self.db.profile.mainFrameAnchor.point = "CENTER"
+                                    self.db.profile.mainFrameAnchor.relativeFrame = nil
                                     self.db.profile.mainFrameAnchor.relativePoint = "CENTER"
                                     self.db.profile.mainFrameAnchor.x = 0
                                     self.db.profile.mainFrameAnchor.y = 0
-
-                                    self.Frame:ClearAllPoints()
-                                    self.Frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+                                    self.Frame:Reposition()
                                 end
                             }
                         }
@@ -335,19 +391,19 @@ function BlessingHelper:SetupConfig()
                 }
             },
             units = {
-                name = "Unit settings",
+                name = L["config.units.name"],
                 type = "group",
                 order = 3,
                 args = {
                     size = {
-                        name = "Size",
+                        name = L["config.units.size.name"],
                         type = "group",
                         inline = true,
                         order = 1,
                         args = {
                             unitWidth = {
-                                name = "Unit width",
-                                desc = "The width of the unit.",
+                                name = L["config.units.size.unitWidth.name"],
+                                desc = L["config.units.size.unitWidth.desc"],
                                 type = "range",
                                 min = 1,
                                 softMax = 1024,
@@ -359,8 +415,8 @@ function BlessingHelper:SetupConfig()
                                 get = function () return self.db.profile.unitWidth end
                             },
                             unitHeight = {
-                                name = "Unit height",
-                                desc = "The height of the unit.",
+                                name = L["config.units.size.unitHeight.name"],
+                                desc = L["config.units.size.unitHeight.desc"],
                                 type = "range",
                                 min = 1,
                                 softMax = 512,
@@ -372,8 +428,8 @@ function BlessingHelper:SetupConfig()
                                 get = function () return self.db.profile.unitHeight end
                             },
                             horizontalPadding = {
-                                name = "Horizontal padding",
-                                desc = "The pixels between units on the Y coord.",
+                                name = L["config.units.size.horizontalPadding.name"],
+                                desc = L["config.units.size.horizontalPadding.desc"],
                                 type = "range",
                                 min = 0,
                                 softMax = 10,
@@ -385,8 +441,8 @@ function BlessingHelper:SetupConfig()
                                 get = function () return self.db.profile.horizontalPadding end
                             },
                             verticalPadding = {
-                                name = "Vertical padding",
-                                desc = "The pixels between units on the Y coord.",
+                                name = L["config.units.size.verticalPadding.name"],
+                                desc = L["config.units.size.verticalPadding.desc"],
                                 type = "range",
                                 min = 0,
                                 softMax = 10,
@@ -400,14 +456,14 @@ function BlessingHelper:SetupConfig()
                         }
                     },
                     font = {
-                        name = "Font",
+                        name = L["config.units.font.name"],
                         type = "group",
                         inline = true,
                         order = 2,
                         args = {
                             unitFont = {
-                                name = "Unit font",
-                                desc = "The font to use to display the unit.",
+                                name = L["config.units.font.unitFont.name"],
+                                desc = L["config.units.font.unitFont.desc"],
                                 type = "select",
                                 values = media:HashTable("font"),
                                 dialogControl = "LSM30_Font",
@@ -419,8 +475,8 @@ function BlessingHelper:SetupConfig()
                                 get = function () return self.db.profile.unitFont end
                             },
                             unitFontSize = {
-                                name = "Unit font size",
-                                desc = "The size of the font that is used to display the unit.",
+                                name = L["config.units.font.unitFontSize.name"],
+                                desc = L["config.units.font.unitFontSize.desc"],
                                 type = "range",
                                 step = 1,
                                 min = 1,
@@ -433,8 +489,8 @@ function BlessingHelper:SetupConfig()
                                 get = function () return self.db.profile.unitFontSize end
                             },
                             durationFont = {
-                                name = "Duration font",
-                                desc = "The font to use to display the duration.",
+                                name = L["config.units.font.durationFont.name"],
+                                desc = L["config.units.font.durationFont.desc"],
                                 type = "select",
                                 values = media:HashTable("font"),
                                 dialogControl = "LSM30_Font",
@@ -446,8 +502,8 @@ function BlessingHelper:SetupConfig()
                                 get = function () return self.db.profile.durationFont end
                             },
                             durationFontSize = {
-                                name = "Duration font size",
-                                desc = "The size of the font that is used to display the duration.",
+                                name = L["config.units.font.durationFontSize.name"],
+                                desc = L["config.units.font.durationFontSize.desc"],
                                 type = "range",
                                 step = 1,
                                 min = 1,
@@ -462,14 +518,14 @@ function BlessingHelper:SetupConfig()
                         }
                     },
                     color = {
-                        name = "Color",
+                        name = L["config.units.color.name"],
                         type = "group",
                         inline = true,
                         order = 3,
                         args = {
                             buffedColor = {
-                                name = "Buffed color",
-                                desc = "Color of units that are buffed and no action needed.",
+                                name = L["config.units.color.buffedColor.name"],
+                                desc = L["config.units.color.buffedColor.desc"],
                                 type = "color",
                                 hasAlpha = false,
                                 order = 1,
@@ -480,8 +536,8 @@ function BlessingHelper:SetupConfig()
                                 get = function () return self.db.profile.buffedColor[1], self.db.profile.buffedColor[2], self.db.profile.buffedColor[3] end
                             },
                             unbuffedColor = {
-                                name = "Unbuffed color",
-                                desc = "Color of units that are not buffed and in range.",
+                                name = L["config.units.color.unbuffedColor.name"],
+                                desc = L["config.units.color.unbuffedColor.desc"],
                                 type = "color",
                                 hasAlpha = false,
                                 order = 2,
@@ -492,8 +548,8 @@ function BlessingHelper:SetupConfig()
                                 get = function () return self.db.profile.unbuffedColor[1], self.db.profile.unbuffedColor[2], self.db.profile.unbuffedColor[3] end
                             },
                             unbuffedPetColor = {
-                                name = "Unbuffed pet color",
-                                desc = "Color of pet units that are not buffed and in range.",
+                                name = L["config.units.color.unbuffedPetColor.name"],
+                                desc = L["config.units.color.unbuffedPetColor.desc"],
                                 type = "color",
                                 hasAlpha = false,
                                 order = 3,
@@ -504,8 +560,8 @@ function BlessingHelper:SetupConfig()
                                 get = function () return self.db.profile.unbuffedPetColor[1], self.db.profile.unbuffedPetColor[2], self.db.profile.unbuffedPetColor[3] end
                             },
                             outOfRangeColor = {
-                                name = "Out of range color",
-                                desc = "Color of units that are out of range.",
+                                name = L["config.units.color.outOfRangeColor.name"],
+                                desc = L["config.units.color.outOfRangeColor.desc"],
                                 type = "color",
                                 hasAlpha = false,
                                 order = 4,
@@ -518,14 +574,14 @@ function BlessingHelper:SetupConfig()
                         }
                     },
                     other = {
-                        name = "Other",
+                        name = L["config.units.other.name"],
                         type = "group",
                         inline = true,
                         order = 4,
                         args = {
                             unitLength = {
-                                name = "Unit length",
-                                desc = "The maximum length of the unit name. Set to 0 to not display names at all.",
+                                name = L["config.units.other.unitLength.name"],
+                                desc = L["config.units.other.unitLength.desc"],
                                 type = "range",
                                 step = 1,
                                 min = 0,
@@ -542,50 +598,50 @@ function BlessingHelper:SetupConfig()
                 }
             },
             help = {
-                name = "Help",
+                name = L["config.help.name"],
                 type = "group",
                 order = 101,
                 args = {
                     spell = {
-                        name = "Blessings",
+                        name = L["config.help.spell.name"],
                         type = "header",
                         order = 1
                     },
                     spellDesc = {
-                        name = "Which blessing will be cast is based on three factors (in order):\n  \124cffffff001.)\124r If the unit already has a buff from the player or one expired it will be choosen.\n  \124cffffff002.)\124r If the unit name exists in the Spell overrides (and both the Spell overrides and the specific override is enabled) that setting will be used.\n  \124cffffff003.)\124r Based on the unit class from the Spells settings.",
+                        name = L["config.help.spellDesc.name"],
                         type = "description",
                         order = 2
                     },
                     buttons = {
-                        name = "Buttons",
+                        name = L["config.help.buttons.name"],
                         type = "header",
                         order = 3
                     },
                     buttonsDesc = {
-                        name = "There are 3 mouse button action available for each unit:\n  \124cffffff00Left click:\124r Smart cast the blessing based on the description above.\n  \124cffffff00Right click:\124r Cast the blessing based on the points \124cffffff002.\124r and \124cffffff003.\124r mentioned above (meaning it will ignore the current buff).\n  \124cffffff00Middle click:\124r Target the unit",
+                        name = L["config.help.buttonsDesc.name"],
                         type = "description",
                         order = 4
                     },
                     combat = {
-                        name = "Combat",
+                        name = L["config.help.combat.name"],
                         type = "header",
                         order = 5
                     },
                     combatDesc = {
-                        name = "In combat the logic is suspended, meaning that left and right click will cast the last set values.\nUnits leaving party/raid will be hidden during combat, but the main frame will not be re-formatted (leaving gaps).\nUnits joining party/raid during combat will be displayed, but can be out of frame when the frame is locked and the left/right click might not work or cast wrong blessings.",
+                        name = L["config.help.combatDesc.name"],
                         type = "description",
                         order = 6
                     },
                     other = {
-                        name = "Other",
+                        name = L["config.help.other.name"],
                         type = "header",
                         order = 7
                     },
                     otherDesc = {
-                        name = "The unlocked frame shows the size of maximum amount of units visible at once including pets. In any normal raid/party that size will never be reached.",
+                        name = L["config.help.otherDesc.name"],
                         type = "description",
                         order = 8
-                    },
+                    }
                 }
             }
         }
@@ -593,27 +649,27 @@ function BlessingHelper:SetupConfig()
 
     local function AddSpells()
         config.args.spells = {
-            name = "Spells",
+            name = L["config.spells.name"],
             type = "group",
             order = 4,
             args = {
                 useGreater = {
-                    name = "Use Greater blessings",
-                    desc = "When checked will cast Greater Blessing of ... instead of Blessing of ...",
+                    name = L["config.spells.useGreater.name"],
+                    desc = L["config.spells.useGreater.desc"],
                     type = "toggle",
                     order = 1,
                     set = function (_, value) self.db.profile.spells.useGreater = value end,
                     get = function () return self.db.profile.spells.useGreater end
                 },
                 special = {
-                    name = "Special",
+                    name = L["config.spells.special.name"],
                     type = "group",
                     inline = true,
                     order = 2,
                     args = {
                         resetPosition = {
-                            name = "Reset",
-                            desc = "Resets the settings of the spells/classes to their default.",
+                            name = L["config.spells.special.resetPosition.name"],
+                            desc = L["config.spells.special.resetPosition.desc"],
                             type = "execute",
                             order = 1,
                             func = function ()
@@ -676,16 +732,16 @@ function BlessingHelper:SetupConfig()
                     order = self.db.profile.spells[class][blessing.key].priority,
                     args = {
                         enabled = {
-                            name = "Enabled",
-                            desc = "Whether the buff is allowed or not for this class.",
+                            name = L["config.spells.class.blessing.enabled.name"],
+                            desc = L["config.spells.class.blessing.enabled.desc"],
                             type = "toggle",
                             order = 1,
                             set = function (_, value) self.db.profile.spells[class][blessing.key].enabled = value end,
                             get = function () return self.db.profile.spells[class][blessing.key].enabled end
                         },
                         priority = {
-                            name = "Priority",
-                            desc = "The priority of the buff, lower number means it will be sooner selected to be cast on the unit.",
+                            name = L["config.spells.class.blessing.priority.name"],
+                            desc = L["config.spells.class.blessing.priority.desc"],
                             type = "range",
                             step = 1,
                             min = 1,
@@ -698,7 +754,8 @@ function BlessingHelper:SetupConfig()
                             get = function () return self.db.profile.spells[class][blessing.key].priority end
                         },
                         up = {
-                            name = "Up",
+                            name = L["config.spells.class.blessing.up.name"],
+                            desc = L["config.spells.class.blessing.up.desc"],
                             type = "execute",
                             order = 3,
                             func = function ()
@@ -707,7 +764,8 @@ function BlessingHelper:SetupConfig()
                             end
                         },
                         down = {
-                            name = "Down",
+                            name = L["config.spells.class.blessing.down.name"],
+                            desc = L["config.spells.class.blessing.down.desc"],
                             type = "execute",
                             order = 4,
                             func = function ()
@@ -724,27 +782,27 @@ function BlessingHelper:SetupConfig()
 
     local function AddOverrides()
         config.args.overrides = {
-            name = "Spell overrides",
+            name = L["config.overrides.name"],
             type = "group",
             order = 5,
             args = {
                 enabled = {
-                    name = "Enabled",
-                    desc = "Whether the overrides are enabled or not.",
+                    name = L["config.overrides.enabled.name"],
+                    desc = L["config.overrides.enabled.desc"],
                     type = "toggle",
                     order = 1,
                     set = function (_, value) self.db.profile.overridesConfig.enabled = value end,
                     get = function () return self.db.profile.overridesConfig.enabled end
                 },
                 add = {
-                    name = "Add",
+                    name = L["config.overrides.add.name"],
                     type = "group",
                     inline = true,
                     order = 2,
                     args = {
-                        name = {
-                            name = "Name",
-                            desc = "The name of the character.",
+                        unitName = {
+                            name = L["config.overrides.add.unitName.name"],
+                            desc = L["config.overrides.add.unitName.desc"],
                             type = "input",
                             order = 1,
                             set = function (_, value)
@@ -753,15 +811,15 @@ function BlessingHelper:SetupConfig()
                             get = function () return self.db.profile.overridesConfig.name end
                         },
                         getTarget = {
-                            name = "Get target",
-                            desc = "Gets the name of the current target or the player if no target.",
+                            name = L["config.overrides.add.getTarget.name"],
+                            desc = L["config.overrides.add.getTarget.desc"],
                             type = "execute",
                             order = 2,
                             func = function () self.db.profile.overridesConfig.name = UnitName("target") or UnitName("player") end
                         },
                         add = {
-                            name = "Add",
-                            desc = "Adds a new override with the current name.",
+                            name = L["config.overrides.add.add.name"],
+                            desc = L["config.overrides.add.add.desc"],
                             type = "execute",
                             order = 3,
                             func = function ()
@@ -775,14 +833,14 @@ function BlessingHelper:SetupConfig()
                     }
                 },
                 special = {
-                    name = "Special",
+                    name = L["config.overrides.special.name"],
                     type = "group",
                     inline = true,
                     order = 3,
                     args = {
                         resetPosition = {
-                            name = "Reset",
-                            desc = "Resets the settings of the overrides to their default.",
+                            name = L["config.overrides.special.resetPosition.name"],
+                            desc = L["config.overrides.special.resetPosition.desc"],
                             type = "execute",
                             order = 1,
                             func = function ()
@@ -838,8 +896,8 @@ function BlessingHelper:SetupConfig()
                 order = 3 + i,
                 args = {
                     enabled = {
-                        name = "Enabled",
-                        desc = "Whether the override is active or not for this name.",
+                        name = L["config.overrides.unitName.enabled.name"],
+                        desc = L["config.overrides.unitName.enabled.desc"],
                         type = "toggle",
                         order = 1,
                         set = function (_, value) self.db.profile.overrides[name].enabled = value end,
@@ -856,16 +914,16 @@ function BlessingHelper:SetupConfig()
                     order = self.db.profile.overrides[name][blessing.key].priority + 1,
                     args = {
                         enabled = {
-                            name = "Enabled",
-                            desc = "Whether the buff is allowed or not for this name.",
+                            name = L["config.overrides.unitName.blessing.enabled.name"],
+                            desc = L["config.overrides.unitName.blessing.enabled.desc"],
                             type = "toggle",
                             order = 1,
                             set = function (_, value) self.db.profile.overrides[name][blessing.key].enabled = value end,
                             get = function () return self.db.profile.overrides[name][blessing.key].enabled end
                         },
                         priority = {
-                            name = "Priority",
-                            desc = "The priority of the buff, lower number means it will be sooner selected to be cast on the unit.",
+                            name = L["config.overrides.unitName.blessing.priority.name"],
+                            desc = L["config.overrides.unitName.blessing.priority.desc"],
                             type = "range",
                             step = 1,
                             min = 1,
@@ -878,7 +936,8 @@ function BlessingHelper:SetupConfig()
                             get = function () return self.db.profile.overrides[name][blessing.key].priority end
                         },
                         up = {
-                            name = "Up",
+                            name = L["config.overrides.unitName.blessing.up.name"],
+                            desc = L["config.overrides.unitName.blessing.up.desc"],
                             type = "execute",
                             order = 3,
                             func = function ()
@@ -887,7 +946,8 @@ function BlessingHelper:SetupConfig()
                             end
                         },
                         down = {
-                            name = "Down",
+                            name = L["config.overrides.unitName.blessing.down.name"],
+                            desc = L["config.overrides.unitName.blessing.down.desc"],
                             type = "execute",
                             order = 4,
                             func = function ()
@@ -900,7 +960,8 @@ function BlessingHelper:SetupConfig()
             end
 
             config.args.overrides.args[name].args.remove = {
-                name = "Remove",
+                name = L["config.overrides.unitName.remove.name"],
+                desc = L["config.overrides.unitName.remove.desc"],
                 type = "execute",
                 order = #self.Blessings + 1,
                 func = function ()
@@ -932,14 +993,14 @@ function BlessingHelper:SetupInfinitySearch()
     if InfinitySearch ~= nil then
         local aceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 
-        InfinitySearch:RegisterAddonFunction("Extras: "..addon, self.L["infinitySearch.options"], nil, function ()
+        InfinitySearch:RegisterAddonFunction("Extras: "..addon, L["infinitySearch.options"], nil, function ()
             LibStub("AceConfigDialog-3.0"):Open(addon)
         end)
-        InfinitySearch:RegisterAddonFunction("Extras: "..addon, self.L["infinitySearch.lock"], nil, function ()
+        InfinitySearch:RegisterAddonFunction("Extras: "..addon, L["infinitySearch.lock"], nil, function ()
             self.Frame:ToggleLock()
             aceConfigRegistry:NotifyChange(addon)
         end)
-        InfinitySearch:RegisterAddonFunction("Extras: "..addon, self.L["infinitySearch.toggle"], nil, function ()
+        InfinitySearch:RegisterAddonFunction("Extras: "..addon, L["infinitySearch.toggle"], nil, function ()
             self.db.profile.enabled = not self.db.profile.enabled
             if self.db.profile.enabled then
                 self.Frame:Show()
@@ -979,7 +1040,7 @@ function BlessingHelper:SetupMinimapIcon()
             icon = 135995,
             OnClick = function(_, button)
                 if InCombatLockdown() then
-                    print(self.L["minimap.incombat"])
+                    print(L["minimap.incombat"])
                     return
                 end
 
@@ -997,8 +1058,8 @@ function BlessingHelper:SetupMinimapIcon()
             end,
             OnTooltipShow = function (tooltip)
                 tooltip:AddLine(addon, 1, 1, 1)
-                tooltip:AddLine(self.L["minimap.leftclick"])
-                tooltip:AddLine(self.L["minimap.rightclick"])
+                tooltip:AddLine(L["minimap.leftclick"])
+                tooltip:AddLine(L["minimap.rightclick"])
             end
         }),
         self.db.profile.minimap

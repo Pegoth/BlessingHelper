@@ -13,6 +13,7 @@
     <Include file="Libs\AceLocale-3.0\AceLocale-3.0.xml"/>
 
     <!-- Load locales -->
+    <Script file="Locales\loader.lua"/>
     <Script file="Locales\enUS.lua"/>
 
     <!-- Load addon files -->

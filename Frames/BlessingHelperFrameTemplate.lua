@@ -82,8 +82,16 @@ function BlessingHelperFrameTemplate_OnLoad(self)
         self:SetHeight(BlessingHelper.db.profile.verticalPadding * 2 + (BlessingHelper.db.profile.unitHeight + BlessingHelper.db.profile.verticalPadding) * (BlessingHelper.db.profile.isLocked and (math.min(visibleCount, BlessingHelper.db.profile.maximumRows)) or BlessingHelper.db.profile.maximumRows))
     end
 
-    self:ClearAllPoints()
-    self:SetPoint(BlessingHelper.db.profile.mainFrameAnchor.point, UIParent, BlessingHelper.db.profile.mainFrameAnchor.relativePoint, BlessingHelper.db.profile.mainFrameAnchor.x, BlessingHelper.db.profile.mainFrameAnchor.y)
+    function self:Reposition()
+        self:ClearAllPoints()
+        self:SetPoint(
+            BlessingHelper.db.profile.mainFrameAnchor.point,
+            BlessingHelper.db.profile.mainFrameAnchor.relativeFrame,
+            BlessingHelper.db.profile.mainFrameAnchor.relativePoint,
+            BlessingHelper.db.profile.mainFrameAnchor.x,
+            BlessingHelper.db.profile.mainFrameAnchor.y
+        )
+    end
 
     if BlessingHelper.db.profile.isLocked then
         self:EnableMouse(false)
@@ -109,11 +117,21 @@ function BlessingHelperFrameTemplate_OnLoad(self)
         end
     end
 
+    self:Reposition()
     self:Redraw()
 
     self:RegisterEvent("GROUP_ROSTER_UPDATE")
     self:RegisterEvent("UNIT_PET")
     self:RegisterEvent("PLAYER_REGEN_ENABLED")
+
+    BlessingHelper.db.RegisterCallback(BlessingHelper, "OnProfileChanged", function ()
+        self:Reposition()
+        self:Redraw()
+    end)
+    BlessingHelper.db.RegisterCallback(BlessingHelper, "OnProfileReset", function ()
+        self:Reposition()
+        self:Redraw()
+    end)
 end
 
 function BlessingHelperFrameTemplate_OnEvent(self)
