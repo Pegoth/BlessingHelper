@@ -351,8 +351,8 @@ function BlessingHelper:SetupConfig()
                                 name = L["config.frame.position.x.name"],
                                 desc = L["config.frame.position.x.desc"],
                                 type = "range",
-                                softMin = -math.floor(UIParent:GetWidth()),
-                                softMax = math.floor(UIParent:GetWidth()),
+                                softMin = -250,
+                                softMax = 250,
                                 order = 4,
                                 set = function (_, value)
                                     self.db.profile.mainFrameAnchor.x = value
@@ -364,8 +364,8 @@ function BlessingHelper:SetupConfig()
                                 name = L["config.frame.position.y.name"],
                                 desc = L["config.frame.position.y.desc"],
                                 type = "range",
-                                softMin = -math.floor(UIParent:GetHeight()),
-                                softMax = math.floor(UIParent:GetHeight()),
+                                softMin = -250,
+                                softMax = 250,
                                 order = 5,
                                 set = function (_, value)
                                     self.db.profile.mainFrameAnchor.y = value
