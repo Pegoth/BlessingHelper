@@ -140,7 +140,9 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
             end
 
             -- Disallow greater blessings for personal buffs
-            targetBlessing.isGreater = false
+            if targetBlessing then
+                targetBlessing.isGreater = false
+            end
         else
             -- Get the class of the unit
             local class = select(2, UnitClass(self.Unit))
@@ -157,7 +159,9 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
                 end
             end
 
-            targetBlessing.isGreater = BlessingHelper.db.profile.spells.useGreater
+            if targetBlessing then
+                targetBlessing.isGreater = BlessingHelper.db.profile.spells.useGreater
+            end
         end
 
         -- No blessing found
