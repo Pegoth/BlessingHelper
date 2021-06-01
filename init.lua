@@ -83,6 +83,7 @@ function BlessingHelper:SetupClasses()
 end
 
 function BlessingHelper:SetupConstants()
+    self.NumUnitIds = 80
     self.UnitIds = {
         {
             id = "player"
@@ -127,12 +128,6 @@ function BlessingHelper:SetupConstants()
         "LEFT",
         "CENTER"
     }
-
-    -- Sum of all possible units
-    self.NumUnitIds = 0
-    for _, unitid in ipairs(self.UnitIds) do
-        self.NumUnitIds = self.NumUnitIds + (unitid.max or 1)
-    end
 end
 
 function BlessingHelper:SetupHelpers()
