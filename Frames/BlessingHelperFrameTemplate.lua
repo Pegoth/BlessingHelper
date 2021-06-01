@@ -21,14 +21,14 @@ function BlessingHelperFrameTemplate_OnLoad(self)
     function self:Redraw()
         if InCombatLockdown() then return end
 
-        local x = BlessingHelper.db.profile.horizontalPadding * 2
-        local y = BlessingHelper.db.profile.verticalPadding * 2
+        local x = BlessingHelper.db.profile.horizontalPadding
+        local y = BlessingHelper.db.profile.verticalPadding
 
         local function next(counter)
             y = y + BlessingHelper.db.profile.unitHeight + BlessingHelper.db.profile.verticalPadding
             if counter % BlessingHelper.db.profile.maximumRows == 0 then
                 x = x + BlessingHelper.db.profile.unitWidth + BlessingHelper.db.profile.horizontalPadding
-                y = BlessingHelper.db.profile.verticalPadding * 2
+                y = BlessingHelper.db.profile.verticalPadding
             end
         end
 
@@ -78,8 +78,8 @@ function BlessingHelperFrameTemplate_OnLoad(self)
         end
 
         self.Background:SetColorTexture(BlessingHelper.db.profile.backgroundColor[1], BlessingHelper.db.profile.backgroundColor[2], BlessingHelper.db.profile.backgroundColor[3], BlessingHelper.db.profile.backgroundColor[4])
-        self:SetWidth(BlessingHelper.db.profile.horizontalPadding * 2 + (BlessingHelper.db.profile.unitWidth + BlessingHelper.db.profile.horizontalPadding) * math.ceil((BlessingHelper.db.profile.isLocked and visibleCount or BlessingHelper.NumUnitIds) / BlessingHelper.db.profile.maximumRows))
-        self:SetHeight(BlessingHelper.db.profile.verticalPadding * 2 + (BlessingHelper.db.profile.unitHeight + BlessingHelper.db.profile.verticalPadding) * (BlessingHelper.db.profile.isLocked and (math.min(visibleCount, BlessingHelper.db.profile.maximumRows)) or BlessingHelper.db.profile.maximumRows))
+        self:SetWidth(BlessingHelper.db.profile.horizontalPadding + (BlessingHelper.db.profile.unitWidth + BlessingHelper.db.profile.horizontalPadding) * math.ceil((BlessingHelper.db.profile.isLocked and visibleCount or BlessingHelper.NumUnitIds) / BlessingHelper.db.profile.maximumRows))
+        self:SetHeight(BlessingHelper.db.profile.verticalPadding + (BlessingHelper.db.profile.unitHeight + BlessingHelper.db.profile.verticalPadding) * (BlessingHelper.db.profile.isLocked and (math.min(visibleCount, BlessingHelper.db.profile.maximumRows)) or BlessingHelper.db.profile.maximumRows))
     end
 
     function self:Reposition()
