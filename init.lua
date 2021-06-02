@@ -205,6 +205,12 @@ function BlessingHelper:SetupDB()
                 relativePoint = "CENTER",
                 x = 0,
                 y = 0
+            },
+            export = {
+                frame = false,
+                unit = false,
+                spells = true,
+                overrides = true
             }
         }
     }
@@ -227,6 +233,8 @@ function BlessingHelper:SetupConfig()
     local media = LibStub("LibSharedMedia-3.0")
     local aceConfig = LibStub("AceConfig-3.0")
     local aceConfigDialog = LibStub("AceConfigDialog-3.0")
+    local aceSerializer = LibStub("AceSerializer-3.0")
+    local libDeflate = LibStub("LibDeflate")
 
     local config = {
         name = addon,
@@ -388,7 +396,7 @@ function BlessingHelper:SetupConfig()
             units = {
                 name = L["config.units.name"],
                 type = "group",
-                order = 3,
+                order = 4,
                 args = {
                     size = {
                         name = L["config.units.size.name"],
@@ -646,7 +654,7 @@ function BlessingHelper:SetupConfig()
         config.args.spells = {
             name = L["config.spells.name"],
             type = "group",
-            order = 4,
+            order = 5,
             args = {
                 useGreater = {
                     name = L["config.spells.useGreater.name"],
@@ -779,7 +787,7 @@ function BlessingHelper:SetupConfig()
         config.args.overrides = {
             name = L["config.overrides.name"],
             type = "group",
-            order = 5,
+            order = 6,
             args = {
                 enabled = {
                     name = L["config.overrides.enabled.name"],
@@ -977,6 +985,183 @@ function BlessingHelper:SetupConfig()
         end
     end
     AddOverrides()
+
+    -- TODO: Move strings to enUS localization
+    local function AddImportExport()
+        if self.importExport == nil then
+            self.importExport = {
+                text = "",
+                importData = nil,
+                imports = {}
+            }
+        end
+
+        config.args.importExport = {
+            name = "Import/Export",
+            type = "group",
+            order = 7,
+            args = {
+                text = {
+                    name = "Text",
+                    desc = "The text that was created with the export function.",
+                    type = "input",
+                    order = 1,
+                    set = function (_, value) self.importExport.text = value end,
+                    get = function () return self.importExport.text end
+                },
+                import = {
+                    name = "Import",
+                    type = "group",
+                    inline = true,
+                    order = 2,
+                    args = {
+                        importAction = {
+                            name = self.importExport.importData == nil and "Parse" or "Import",
+                            desc = "Loads the information from the text.",
+                            type = "execute",
+                            order = 2,
+                            func = function ()
+                                if self.importExport.importData ~= nil then
+                                    -- TODO: Import
+                                    self.importExport.importData = nil
+                                    AddImportExport()
+                                elseif self.importExport.text ~= nil and self.importExport.text ~= "" then
+                                    local success, data = aceSerializer:Deserialize(libDeflate:DecompressDeflate(libDeflate:DecodeForPrint(self.importExport.text)))
+                                    if success and (data.frame ~= nil or data.unit ~= nil or data.spells ~= nil or data.overrides ~= nil) then
+                                        self.importExport.importData = data
+                                        self.importExport.imports.frame = data.frame ~= nil and true or nil
+                                        self.importExport.imports.unit = data.unit ~= nil and true or nil
+                                        self.importExport.imports.spells = data.spells ~= nil and true or nil
+                                        self.importExport.imports.overrides = data.overrides ~= nil and true or nil
+                                        AddImportExport()
+                                    else
+                                        print("BlessingHelper: Failed to parse text.")
+                                    end
+                                end
+                            end
+                        }
+                    }
+                },
+                export = {
+                    name = "Export",
+                    type = "group",
+                    inline = true,
+                    order = 3,
+                    args = {
+                        exports = {
+                            name = "Exports",
+                            desc = "Select what datas will be exported.",
+                            order = 1,
+                            type = "multiselect",
+                            values = {
+                                frame = "Frame",
+                                unit = "Unit",
+                                spells = "Spells",
+                                overrides = "Name overrides"
+                            },
+                            set = function (_, key, value) self.db.profile.export[key] = value end,
+                            get = function (_, key) return self.db.profile.export[key] end
+                        },
+                        generate = {
+                            name = "Generate",
+                            desc = "Generates the export text.",
+                            order = 2,
+                            type = "execute",
+                            func = function ()
+                                local data = {}
+                                local any = false
+
+                                if self.db.profile.export.frame then
+                                    data.frame = {
+                                        maximumRows = self.db.profile.maximumRows,
+                                        backgroundColor = self.db.profile.backgroundColor,
+                                        self.db.profile.mainFrameAnchor
+                                    }
+                                    any = true
+                                end
+
+                                if self.db.profile.export.unit then
+                                    data.unit = {
+                                        unitWidth = self.db.profile.unitWidth,
+                                        unitHeight = self.db.profile.unitHeight,
+                                        horizontalPadding = self.db.profile.horizontalPadding,
+                                        verticalPadding = self.db.profile.verticalPadding,
+                                        unitLength = self.db.profile.unitLength,
+                                        unitFont = self.db.profile.unitFont,
+                                        unitFontSize = self.db.profile.unitFontSize,
+                                        durationFont = self.db.profile.durationFont,
+                                        durationFontSize = self.db.profile.durationFontSize,
+                                        buffedColor = self.db.profile.buffedColor,
+                                        unbuffedColor = self.db.profile.unbuffedColor,
+                                        unbuffedPetColor = self.db.profile.unbuffedPetColor,
+                                        outOfRangeColor = self.db.profile.outOfRangeColor
+                                    }
+                                    any = true
+                                end
+
+                                if self.db.profile.export.spells then
+                                    data.spells = self.db.profile.spells
+                                    any = true
+                                end
+
+                                if self.db.profile.export.overrides then
+                                    data.overridesConfig = {
+                                        names = self.db.profile.overridesConfig.names
+                                    }
+                                    data.overrides = self.db.profile.overrides
+                                    any = true
+                                end
+
+                                if any then
+                                    self.importExport.importData = nil
+                                    self.importExport.text = libDeflate:EncodeForPrint(libDeflate:CompressDeflate(aceSerializer:Serialize(data)))
+                                    AddImportExport()
+                                else
+                                    print("BlessingHelper: Please select at least one thing to export.")
+                                end
+                            end
+                        }
+                    }
+                }
+            }
+        }
+
+        if self.importExport.importData ~= nil then
+            config.args.importExport.args.import.args.data = {
+                name = "Data",
+                type = "group",
+                order = 1,
+                args = {
+                    imports = {
+                        name = "Imports",
+                        desc = "Select what datas will be imported.",
+                        order = 1,
+                        type = "multiselect",
+                        values = function ()
+                            local values = {
+                                frame = "Frame",
+                                unit = "Unit",
+                                spells = "Spells",
+                                overrides = "Name overrides"
+                            }
+
+                            -- Only show checkboxes for existing data
+                            for k in pairs(values) do
+                                if self.importExport.imports[k] == nil then
+                                    values[k] = nil
+                                end
+                            end
+
+                            return values
+                        end,
+                        set = function (_, key, value) self.importExport.imports[key] = value end,
+                        get = function (_, key) return self.importExport.imports[key] end
+                    }
+                }
+            }
+        end
+    end
+    AddImportExport()
 
     config.args.profiles = LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db)
 
