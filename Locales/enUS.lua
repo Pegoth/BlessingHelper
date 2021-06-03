@@ -217,6 +217,52 @@ CreateLocale("enUS", true, {
                 }
             }
         },
+        importExport = {
+            name = "Import/Export",
+            text = {
+                name = "Text",
+                desc = "The text that was created with the export function."
+            },
+            import = {
+                name = "Import",
+                importAction = {
+                    import = {
+                        name = "Import",
+                        desc = "Imports the selected values to the current profile.\nWARNING: It will override every selected setting!",
+                        data = {
+                            name = "Data",
+                            imports = {
+                                name = "Imports",
+                                desc = "Select what datas will be imported."
+                            }
+                        },
+                    },
+                    parse = {
+                        name = "Parse",
+                        desc = "Loads the information from the text.",
+                        error = "Failed to parse text."
+                    }
+                }
+            },
+            export = {
+                name = "Export",
+                exports = {
+                    name = "Exports",
+                    desc = "\124cffffff00"..addon.."\124r: Select what datas will be exported."
+                },
+                generate = {
+                    name = "Generate",
+                    desc = "Generates the export text.",
+                    error = "\124cffffff00"..addon.."\124r: Please select at least one thing to export."
+                }
+            },
+            values = {
+                frame = "Frame",
+                unit = "Unit",
+                spells = "Spells",
+                overrides = "Name overrides"
+            }
+        },
         help = {
             name = "Help",
             spell = {
