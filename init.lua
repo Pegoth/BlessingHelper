@@ -323,15 +323,7 @@ function BlessingHelper:SetupConfig()
                 desc = L["config.enabled.desc"],
                 type = "toggle",
                 order = 1,
-                set = function (_, value)
-                    self.db.profile.enabled = value
-
-                    if value then
-                        self.Frame:Show()
-                    else
-                        self.Frame:Hide()
-                    end
-                end,
+                set = function (_, value) self.Frame:SetVisibility(value) end,
                 get = function () return self.db.profile.enabled end
             },
             isLocked = {
@@ -1311,12 +1303,7 @@ function BlessingHelper:SetupInfinitySearch()
             aceConfigRegistry:NotifyChange(addon)
         end)
         InfinitySearch:RegisterAddonFunction("Extras: "..addon, L["infinitySearch.toggle"], nil, function ()
-            self.db.profile.enabled = not self.db.profile.enabled
-            if self.db.profile.enabled then
-                self.Frame:Show()
-            else
-                self.Frame:Hide()
-            end
+            self.Frame:SetVisibility(not self.db.profile.enabled)
             aceConfigRegistry:NotifyChange(addon)
         end)
 
@@ -1355,12 +1342,7 @@ function BlessingHelper:SetupMinimapIcon()
                 end
 
                 if button == "LeftButton" then
-                    self.db.profile.enabled = not self.db.profile.enabled
-                    if self.db.profile.enabled then
-                        self.Frame:Show()
-                    else
-                        self.Frame:Hide()
-                    end
+                    self.Frame:SetVisibility(not self.db.profile.enabled)
                     LibStub("AceConfigRegistry-3.0"):NotifyChange(addon)
                 elseif button == "RightButton" then
                     LibStub("AceConfigDialog-3.0"):Open(addon)
