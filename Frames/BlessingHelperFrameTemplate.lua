@@ -2,22 +2,41 @@ local addon = ...
 
 -- region BlessingHelperFrame events
 function BlessingHelperFrameTemplate_OnLoad(self)
+    ---Toggles the lock state of the frame.
     function self:ToggleLock()
         self:SetLock(not BlessingHelper.db.profile.isLocked)
     end
 
+    ---Sets the lock state of the frame to the given value and saves it to the db.
+    ---@param locked boolean Whether the frame is locked or not.
     function self:SetLock(locked)
         BlessingHelper.db.profile.isLocked = locked
 
-        if BlessingHelper.db.profile.isLocked then
+        if locked then
             self:EnableMouse(false)
         else
             self:EnableMouse(true)
         end
 
+        self:Reposition()
         self:Redraw()
     end
 
+    ---Sets the visibility of the frame and saves it to the db.
+    ---@param visible boolean Whether the frame is visible or not.
+    function self:SetVisibility(visible)
+        BlessingHelper.db.profile.enabled = visible
+
+        if visible then
+            self:Show()
+            self:Reposition()
+            self:Redraw()
+        else
+            self:Hide()
+        end
+    end
+
+    ---Repositions and redraws the units and the frame. Will do nothing if in combat.
     function self:Redraw()
         if InCombatLockdown() then return end
 
@@ -82,7 +101,12 @@ function BlessingHelperFrameTemplate_OnLoad(self)
         self:SetHeight(BlessingHelper.db.profile.verticalPadding + (BlessingHelper.db.profile.unitHeight + BlessingHelper.db.profile.verticalPadding) * (BlessingHelper.db.profile.isLocked and (math.min(visibleCount, BlessingHelper.db.profile.maximumRows)) or BlessingHelper.db.profile.maximumRows))
     end
 
+    ---Repositions the frame based on the position settings in the db. If 
     function self:Reposition()
+        if BlessingHelper.db.profile.mainFrameAnchor.relativeFrame ~= nil and _G[BlessingHelper.db.profile.mainFrameAnchor.relativeFrame] == nil then
+            return
+        end
+
         self:ClearAllPoints()
         self:SetPoint(
             BlessingHelper.db.profile.mainFrameAnchor.point,
@@ -100,7 +124,11 @@ function BlessingHelperFrameTemplate_OnLoad(self)
     end
 
     self.Background:SetTexture("Interface\\Addons\\"..addon.."\\Textures\\Background")
+
+    ---Whether the frame is currently being moved or not.
     self.IsMoving = false
+
+    ---The unit frame buttons for each possible units in display priority order.
     self.Units = {}
 
     -- Create unit frames
@@ -123,6 +151,9 @@ function BlessingHelperFrameTemplate_OnLoad(self)
     self:RegisterEvent("GROUP_ROSTER_UPDATE")
     self:RegisterEvent("UNIT_PET")
     self:RegisterEvent("PLAYER_REGEN_ENABLED")
+    self:RegisterEvent("ADDON_LOADED")
+    self:RegisterEvent("PLAYER_ENTERING_WORLD")
+    self:RegisterEvent("PLAYER_LOGIN")
 
     BlessingHelper.db.RegisterCallback(BlessingHelper, "OnProfileChanged", function ()
         self:Reposition()
@@ -135,6 +166,7 @@ function BlessingHelperFrameTemplate_OnLoad(self)
 end
 
 function BlessingHelperFrameTemplate_OnEvent(self)
+    self:Reposition()
     self:Redraw()
 end
 

@@ -18,72 +18,129 @@ function BlessingHelper:OnEnable()
 end
 
 function BlessingHelper:SetupClasses()
+    ---@class Spell
+    ---@field id integer The ID of the spell.
+    ---@field name string The name of the spell.
+    ---@field icon integer|string The icon of the spell.
+    self.Spell = {}
+
+    ---Creates a new spell from the given id.
+    ---@param id integer The ID of the spell
+    ---@param name nil|string The name of the spell, if null it will be filled from the id.
+    ---@param icon nil|integer|string The icon of the spell, if null it will be filled from the id.
+    ---@return Spell Spell The created spell.
+    function self.Spell:New(id, name, icon)
+        if name == nil or icon == nil then
+            local n, _, i = GetSpellInfo(id)
+
+            name = name or n
+            icon = icon or i
+        end
+
+        local buf = {
+            id = id,
+            name = name,
+            icon = icon
+        }
+
+        setmetatable(buf, self)
+        self.__index = self
+        return buf
+    end
+
+    ---@class Blessing
+    ---@field key string The name of the Blessing that will be used for tables.
+    ---@field normal Spell The normal version of the Blessing.
+    ---@field greater Spell The greater version of the Blessing.
+    ---@field isGreater boolean Whether the Blessing is a greater version, set only if it is on a unit.
+    ---@field duration boolean The total duration of the Blessing, set only if it is on a unit.
+    ---@field expirationTime boolean When will the Blessing expire, set only if it is on a unit.
+    ---@field unitCaster boolean The source of the Blessing, set only if it is on a unit AND that unit is from the current raid/party.
     self.Blessing = {}
+
+    ---Creates a new Blessing.
+    ---@param key string The name that will be used as key for tables.
+    ---@param normal integer The ID of the normal spell.
+    ---@param greater integer The ID of the greater spell.
+    ---@return Blessing Blessing The created Blessing.
     function self.Blessing:New(key, normal, greater)
         local buf = {
             key = key,
-            normal = {
-                id = normal
-            },
-            greater = {
-                id = greater
-            }
+            normal = BlessingHelper.Spell:New(normal),
+            greater = BlessingHelper.Spell:New(greater)
         }
-
-        buf.normal.name, _, buf.normal.icon = GetSpellInfo(normal)
-        buf.greater.name, _, buf.greater.icon = GetSpellInfo(greater)
 
         setmetatable(buf, self)
         self.__index = self
         return buf
     end
+
+    ---Creates a clean copy of the Blessing.
+    ---@param blessing Blessing The Blessing to copy.
+    ---@return Blessing Blessing The copy.
     function self.Blessing:Copy(blessing)
         local buf = {
             key = blessing.key,
-            normal = {
-                id = blessing.normal.id,
-                name = blessing.normal.name,
-                icon = blessing.normal.icon
-            },
-            greater = {
-                id = blessing.greater.id,
-                name = blessing.greater.name,
-                icon = blessing.greater.icon
-            }
+            normal = BlessingHelper.Spell:New(blessing.normal.id, blessing.normal.name, blessing.normal.icon),
+            greater = BlessingHelper.Spell:New(blessing.greater.id, blessing.greater.name, blessing.greater.icon)
         }
 
         setmetatable(buf, self)
         self.__index = self
         return buf
     end
+
+    ---Checks if the given buff is this Blessing. Checks both greater and normal.
+    ---@param buffName string The name of the buff.
+    ---@return boolean boolean Whether the buff was this Blessing or not.
     function self.Blessing:Equals(buffName)
         return self.normal.name == buffName or self.greater.name == buffName
     end
+
+    ---Checks if the Blessing is usable or not. It is still considered usable when no mana for it.
+    ---@param greater boolean Whether to use greater Blessing or not.
+    ---@return boolean boolean Whether the Blessing is usable or not.
     function self.Blessing:IsUsable(greater)
-        local usable, noMana = IsUsableSpell(greater and self.greater.id or self.normal.id)
+        local usable, noMana = IsUsableSpell(greater and self.greater.name or self.normal.name)
         return usable or noMana
     end
+
+    ---Checks if the given Blessing is in range or not.
+    ---@param unit string Unit to check.
+    ---@return boolean boolean Whether the unit is in range or not.
     function self.Blessing:IsInRange(unit)
         return IsSpellInRange(self.normal.name, unit)
     end
+
+    ---Checks if the given Blessings table contains this Blessing or not. Checks for both normal and greater.
+    ---@param blessings table<integer, Blessing> The table that contains the Blessings to check.
+    ---@param own nil|boolean true: Must be from the player; false: Must NOT be from the player; nil: Doesn't matter if it's from the player.
+    ---@return boolean boolean Whether the table contained this Blessing or not.
     function self.Blessing:Contains(blessings, own)
         for i = 1, #blessings do
             if own == nil or own == true and blessings[i].unitCaster == "player" or own == false and blessings[i].unitCaster ~= "player" then
-                if blessings[i].name == self.normal.name then
-                    return self.normal.name, blessings[i].unitCaster == "player"
-                elseif blessings[i].name == self.greater.name then
-                    return self.greater.name, blessings[i].unitCaster == "player"
+                if blessings[i]:Equals(self.normal.name) then
+                    return true
                 end
             end
         end
+
+        return false
     end
+
+    ---Gets the Spell portion of the Blessing.
+    ---@param allowGreater boolean Whether to get the greater or normal. If set to true the normal will still be returned in case the greater is not usable.
+    ---@return Spell Spell The spell part of the Blessing.
     function self.Blessing:Spell(allowGreater)
         return (allowGreater or self.isGreater) and self:IsUsable(true) and self.greater or self.normal
     end
 end
 
 function BlessingHelper:SetupConstants()
+    ---The absolute maximum units that may be visible at once.
     self.NumUnitIds = 80
+
+    ---The unitids and their maximum (if any).
     self.UnitIds = {
         {
             id = "player"
@@ -108,6 +165,8 @@ function BlessingHelper:SetupConstants()
             max = 40
         }
     }
+
+    --- The existing Blessings.
     self.Blessings = {
         self.Blessing:New("Kings", 20217, 25898),
         self.Blessing:New("Wisdom", 25290, 25918),
@@ -116,7 +175,11 @@ function BlessingHelper:SetupConstants()
         self.Blessing:New("Salvation", 1038, 25895),
         self.Blessing:New("Sanctuary", 20914, 25899)
     }
+
+    --- The Blessing to use for checking range
     self.RangeCheckSpell = self.Blessings[1]
+
+    --- The possible anchors for frames.
     self.AnchorPoints = {
         "TOPLEFT",
         "TOP",
@@ -131,6 +194,10 @@ function BlessingHelper:SetupConstants()
 end
 
 function BlessingHelper:SetupHelpers()
+    ---Checks if the given table contains the given value.
+    ---@param tbl table The table to check in.
+    ---@param value any The value to check for.
+    ---@return boolean boolean Whether the table contained the value or not.
     function self.Contains(tbl, value)
         if type(tbl) ~= "table" then
             return false
@@ -144,6 +211,13 @@ function BlessingHelper:SetupHelpers()
 
         return false
     end
+
+    ---Creates a standard, flat backdrop on the frame.
+    ---@param frame any The frame to create the backdrop on.
+    ---@param r number Red color part.
+    ---@param g number Green color part.
+    ---@param b number Blue color part.
+    ---@param a number Alpha of the color.
     function self.CreateBackdrop(frame, r, g, b, a)
         frame:SetBackdrop({
             bgFile = "Interface\\Addons\\"..addon.."\\Textures\\Background",
@@ -156,6 +230,10 @@ function BlessingHelper:SetupHelpers()
         })
         frame:SetBackdropColor(r, g, b, a)
     end
+
+    ---Checks if the given buff is a Blessing or not.
+    ---@param buffName string The name of the buff.
+    ---@return Blessing Blessing The found Blessing (if any).
     function self:IsBlessing(buffName)
         for _, blessing in ipairs(self.Blessings) do
             if blessing:Equals(buffName) then
@@ -205,6 +283,12 @@ function BlessingHelper:SetupDB()
                 relativePoint = "CENTER",
                 x = 0,
                 y = 0
+            },
+            export = {
+                frame = false,
+                unit = false,
+                spells = true,
+                overrides = true
             }
         }
     }
@@ -227,6 +311,8 @@ function BlessingHelper:SetupConfig()
     local media = LibStub("LibSharedMedia-3.0")
     local aceConfig = LibStub("AceConfig-3.0")
     local aceConfigDialog = LibStub("AceConfigDialog-3.0")
+    local aceSerializer = LibStub("AceSerializer-3.0")
+    local libDeflate = LibStub("LibDeflate")
 
     local config = {
         name = addon,
@@ -237,15 +323,7 @@ function BlessingHelper:SetupConfig()
                 desc = L["config.enabled.desc"],
                 type = "toggle",
                 order = 1,
-                set = function (_, value)
-                    self.db.profile.enabled = value
-
-                    if value then
-                        self.Frame:Show()
-                    else
-                        self.Frame:Hide()
-                    end
-                end,
+                set = function (_, value) self.Frame:SetVisibility(value) end,
                 get = function () return self.db.profile.enabled end
             },
             isLocked = {
@@ -279,7 +357,7 @@ function BlessingHelper:SetupConfig()
                         type = "range",
                         step = 1,
                         min = 1,
-                        max = BlessingHelper.NumUnitIds,
+                        max = self.NumUnitIds,
                         order = 2,
                         set = function (_, value)
                             self.db.profile.maximumRows = value
@@ -388,7 +466,7 @@ function BlessingHelper:SetupConfig()
             units = {
                 name = L["config.units.name"],
                 type = "group",
-                order = 3,
+                order = 4,
                 args = {
                     size = {
                         name = L["config.units.size.name"],
@@ -646,7 +724,7 @@ function BlessingHelper:SetupConfig()
         config.args.spells = {
             name = L["config.spells.name"],
             type = "group",
-            order = 4,
+            order = 5,
             args = {
                 useGreater = {
                     name = L["config.spells.useGreater.name"],
@@ -719,7 +797,7 @@ function BlessingHelper:SetupConfig()
                 args = {}
             }
 
-            for _, blessing in ipairs(BlessingHelper.Blessings) do
+            for _, blessing in ipairs(self.Blessings) do
                 config.args.spells.args[class].args[blessing.key] = {
                     name = blessing.normal.name,
                     type = "group",
@@ -740,7 +818,7 @@ function BlessingHelper:SetupConfig()
                             type = "range",
                             step = 1,
                             min = 1,
-                            max = #BlessingHelper.Blessings,
+                            max = #self.Blessings,
                             order = 2,
                             set = function (_, value)
                                 SetPriority(class, blessing.key, value)
@@ -779,7 +857,7 @@ function BlessingHelper:SetupConfig()
         config.args.overrides = {
             name = L["config.overrides.name"],
             type = "group",
-            order = 5,
+            order = 6,
             args = {
                 enabled = {
                     name = L["config.overrides.enabled.name"],
@@ -978,6 +1056,235 @@ function BlessingHelper:SetupConfig()
     end
     AddOverrides()
 
+    local function AddImportExport()
+        if self.importExport == nil then
+            self.importExport = {
+                text = "",
+                importData = nil,
+                imports = {}
+            }
+        end
+
+        config.args.importExport = {
+            name = L["config.importExport.name"],
+            type = "group",
+            order = 7,
+            args = {
+                text = {
+                    name = L["config.importExport.text.name"],
+                    desc = L["config.importExport.text.desc"],
+                    type = "input",
+                    order = 1,
+                    set = function (_, value) self.importExport.text = value end,
+                    get = function () return self.importExport.text end
+                },
+                import = {
+                    name = L["config.importExport.import.name"],
+                    type = "group",
+                    inline = true,
+                    order = 2,
+                    args = {
+                        importAction = {
+                            name = L["config.importExport.import.importAction."..(self.importExport.importData ~= nil and "import" or "parse")..".name"],
+                            desc = L["config.importExport.import.importAction."..(self.importExport.importData ~= nil and "import" or "parse")..".desc"],
+                            type = "execute",
+                            order = 2,
+                            func = function ()
+                                if self.importExport.importData ~= nil then
+                                    if self.importExport.imports.frame then
+                                        self.db.profile.maximumRows = self.importExport.importData.frame.maximumRows
+                                        self.db.profile.backgroundColor = self.importExport.importData.frame.backgroundColor
+                                        self.db.profile.mainFrameAnchor.point = self.importExport.importData.frame.mainFrameAnchor.point
+                                        self.db.profile.mainFrameAnchor.relativeFrame = self.importExport.importData.frame.mainFrameAnchor.relativeFrame
+                                        self.db.profile.mainFrameAnchor.relativePoint = self.importExport.importData.frame.mainFrameAnchor.relativePoint
+                                        self.db.profile.mainFrameAnchor.x = self.importExport.importData.frame.mainFrameAnchor.x
+                                        self.db.profile.mainFrameAnchor.y = self.importExport.importData.frame.mainFrameAnchor.y
+                                    end
+
+                                    if self.importExport.imports.unit then
+                                        self.db.profile.unitWidth = self.importExport.importData.unit.unitWidth
+                                        self.db.profile.unitHeight = self.importExport.importData.unit.unitHeight
+                                        self.db.profile.horizontalPadding = self.importExport.importData.unit.horizontalPadding
+                                        self.db.profile.verticalPadding = self.importExport.importData.unit.verticalPadding
+                                        self.db.profile.unitLength = self.importExport.importData.unit.unitLength
+                                        self.db.profile.unitFont = self.importExport.importData.unit.unitFont
+                                        self.db.profile.unitFontSize = self.importExport.importData.unit.unitFontSize
+                                        self.db.profile.durationFont = self.importExport.importData.unit.durationFont
+                                        self.db.profile.durationFontSize = self.importExport.importData.unit.durationFontSize
+                                        self.db.profile.buffedColor = self.importExport.importData.unit.buffedColor
+                                        self.db.profile.unbuffedColor = self.importExport.importData.unit.unbuffedColor
+                                        self.db.profile.unbuffedPetColor = self.importExport.importData.unit.unbuffedPetColor
+                                        self.db.profile.outOfRangeColor = self.importExport.importData.unit.outOfRangeColor
+                                    end
+
+                                    if self.importExport.imports.spells then
+                                        for _, class in ipairs(CLASS_SORT_ORDER) do
+                                            for _, blessing in ipairs(self.Blessings) do
+                                                local value = self.importExport.importData.spells[class] ~= nil and self.importExport.importData.spells[class][blessing.key]
+                                                self.db.profile.spells[class][blessing.key].enabled = value and value.enabled
+                                                self.db.profile.spells[class][blessing.key].priority = value and value.priority
+                                            end
+                                        end
+                                    end
+
+                                    if self.importExport.imports.overrides then
+                                        for _, name in ipairs(self.importExport.importData.overridesConfig.names) do
+                                            if not self.Contains(self.db.profile.overridesConfig.names, name) then
+                                                table.insert(self.db.profile.overridesConfig.names, name)
+                                            end
+
+                                            for _, blessing in ipairs(self.Blessings) do
+                                                local value = self.importExport.importData.overrides[name][blessing.key]
+
+                                                self.db.profile.overrides[name][blessing.key].enabled = value and value.enabled
+                                                self.db.profile.overrides[name][blessing.key].priority = value and value.priority
+                                            end
+                                        end
+                                    end
+
+                                    self.importExport.text = nil
+                                    self.importExport.importData = nil
+                                    self.Frame:Reposition()
+                                    self.Frame:Redraw()
+                                    AddImportExport()
+                                elseif self.importExport.text ~= nil and self.importExport.text ~= "" then
+                                    local success, data = aceSerializer:Deserialize(libDeflate:DecompressDeflate(libDeflate:DecodeForPrint(self.importExport.text)))
+                                    if success and (data.frame ~= nil or data.unit ~= nil or data.spells ~= nil or data.overrides ~= nil) then
+                                        self.importExport.importData = data
+                                        self.importExport.imports.frame = data.frame ~= nil and true or nil
+                                        self.importExport.imports.unit = data.unit ~= nil and true or nil
+                                        self.importExport.imports.spells = data.spells ~= nil and true or nil
+                                        self.importExport.imports.overrides = data.overrides ~= nil and true or nil
+                                        AddImportExport()
+                                    else
+                                        print(L["config.importExport.import.importAction.parse.error"])
+                                    end
+                                end
+                            end
+                        }
+                    }
+                },
+                export = {
+                    name = L["config.importExport.export.name"],
+                    type = "group",
+                    inline = true,
+                    order = 3,
+                    args = {
+                        exports = {
+                            name = L["config.importExport.export.exports.name"],
+                            desc = L["config.importExport.export.exports.desc"],
+                            order = 1,
+                            type = "multiselect",
+                            values = {
+                                frame = L["config.importExport.values.frame"],
+                                unit = L["config.importExport.values.unit"],
+                                spells = L["config.importExport.values.spells"],
+                                overrides = L["config.importExport.values.overrides"]
+                            },
+                            set = function (_, key, value) self.db.profile.export[key] = value end,
+                            get = function (_, key) return self.db.profile.export[key] end
+                        },
+                        generate = {
+                            name = L["config.importExport.export.generate.name"],
+                            desc = L["config.importExport.export.generate.desc"],
+                            order = 2,
+                            type = "execute",
+                            func = function ()
+                                local data = {}
+                                local any = false
+
+                                if self.db.profile.export.frame then
+                                    data.frame = {
+                                        maximumRows = self.db.profile.maximumRows,
+                                        backgroundColor = self.db.profile.backgroundColor,
+                                        mainFrameAnchor = self.db.profile.mainFrameAnchor
+                                    }
+                                    any = true
+                                end
+
+                                if self.db.profile.export.unit then
+                                    data.unit = {
+                                        unitWidth = self.db.profile.unitWidth,
+                                        unitHeight = self.db.profile.unitHeight,
+                                        horizontalPadding = self.db.profile.horizontalPadding,
+                                        verticalPadding = self.db.profile.verticalPadding,
+                                        unitLength = self.db.profile.unitLength,
+                                        unitFont = self.db.profile.unitFont,
+                                        unitFontSize = self.db.profile.unitFontSize,
+                                        durationFont = self.db.profile.durationFont,
+                                        durationFontSize = self.db.profile.durationFontSize,
+                                        buffedColor = self.db.profile.buffedColor,
+                                        unbuffedColor = self.db.profile.unbuffedColor,
+                                        unbuffedPetColor = self.db.profile.unbuffedPetColor,
+                                        outOfRangeColor = self.db.profile.outOfRangeColor
+                                    }
+                                    any = true
+                                end
+
+                                if self.db.profile.export.spells then
+                                    data.spells = self.db.profile.spells
+                                    any = true
+                                end
+
+                                if self.db.profile.export.overrides then
+                                    data.overridesConfig = {
+                                        names = self.db.profile.overridesConfig.names
+                                    }
+                                    data.overrides = self.db.profile.overrides
+                                    any = true
+                                end
+
+                                if any then
+                                    self.importExport.importData = nil
+                                    self.importExport.text = libDeflate:EncodeForPrint(libDeflate:CompressDeflate(aceSerializer:Serialize(data)))
+                                    AddImportExport()
+                                else
+                                    print(L["config.importExport.export.generate.error"])
+                                end
+                            end
+                        }
+                    }
+                }
+            }
+        }
+
+        if self.importExport.importData ~= nil then
+            config.args.importExport.args.import.args.data = {
+                name = L["config.importExport.import.data.name"],
+                type = "group",
+                order = 1,
+                args = {
+                    imports = {
+                        name = L["config.importExport.import.data.imports.name"],
+                        desc = L["config.importExport.import.data.imports.desc"],
+                        order = 1,
+                        type = "multiselect",
+                        values = function ()
+                            local values = {
+                                frame = L["config.importExport.values.frame"],
+                                unit = L["config.importExport.values.unit"],
+                                spells = L["config.importExport.values.spells"],
+                                overrides = L["config.importExport.values.overrides"]
+                            }
+
+                            -- Only show checkboxes for existing data
+                            for k in pairs(values) do
+                                if self.importExport.imports[k] == nil then
+                                    values[k] = nil
+                                end
+                            end
+
+                            return values
+                        end,
+                        set = function (_, key, value) self.importExport.imports[key] = value end,
+                        get = function (_, key) return self.importExport.imports[key] end
+                    }
+                }
+            }
+        end
+    end
+    AddImportExport()
+
     config.args.profiles = LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db)
 
     aceConfig:RegisterOptionsTable(addon, config, { "bh", "blessinghelper" })
@@ -996,12 +1303,7 @@ function BlessingHelper:SetupInfinitySearch()
             aceConfigRegistry:NotifyChange(addon)
         end)
         InfinitySearch:RegisterAddonFunction("Extras: "..addon, L["infinitySearch.toggle"], nil, function ()
-            self.db.profile.enabled = not self.db.profile.enabled
-            if self.db.profile.enabled then
-                self.Frame:Show()
-            else
-                self.Frame:Hide()
-            end
+            self.Frame:SetVisibility(not self.db.profile.enabled)
             aceConfigRegistry:NotifyChange(addon)
         end)
 
@@ -1040,12 +1342,7 @@ function BlessingHelper:SetupMinimapIcon()
                 end
 
                 if button == "LeftButton" then
-                    self.db.profile.enabled = not self.db.profile.enabled
-                    if self.db.profile.enabled then
-                        self.Frame:Show()
-                    else
-                        self.Frame:Hide()
-                    end
+                    self.Frame:SetVisibility(not self.db.profile.enabled)
                     LibStub("AceConfigRegistry-3.0"):NotifyChange(addon)
                 elseif button == "RightButton" then
                     LibStub("AceConfigDialog-3.0"):Open(addon)

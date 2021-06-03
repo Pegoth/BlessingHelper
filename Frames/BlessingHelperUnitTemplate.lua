@@ -4,9 +4,15 @@ local media = LibStub("LibSharedMedia-3.0")
 function BlessingHelperUnitTemplate_OnLoad(self)
     BlessingHelper.CreateBackdrop(self, 0, 0, 0, 1)
 
+    ---Checks if the unit of the frame is a pet or not.
+    ---@return boolean boolean Whether the unit is pet or not.
     function self:IsPetUnit()
         return self.Unit:lower():find("pet") ~= nil
     end
+
+    ---Gets Blessings that are on the unit.
+    ---@param own nil|boolean Whether the Blessing must be from the player or not. Nil means it doesn't matter.
+    ---@return table<integer, Blessing> table<integer, Blessing> The found Blessings.
     function self:Blessings(own)
         local buf = {}
 
@@ -20,7 +26,7 @@ function BlessingHelperUnitTemplate_OnLoad(self)
                     copy.isGreater = copy.greater.name == name
                     copy.duration = duration
                     copy.expirationTime = expirationTime
-                    copy.unitCaster = unitCaster:lower()
+                    copy.unitCaster = unitCaster
                     table.insert(buf, copy)
                 end
             end
@@ -30,6 +36,8 @@ function BlessingHelperUnitTemplate_OnLoad(self)
 
         return buf
     end
+
+    ---Resizes and redraws the frame.
     function self:Redraw()
         self.LeftIcon:SetWidth(BlessingHelper.db.profile.unitHeight / 2)
         self.LeftIcon:SetHeight(BlessingHelper.db.profile.unitHeight)
@@ -95,6 +103,7 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
             self.Duration:SetText(string.format("%02.0f:%02.0f", m, s))
             self:SetBackdropColor(BlessingHelper.db.profile.buffedColor[1], BlessingHelper.db.profile.buffedColor[2], BlessingHelper.db.profile.buffedColor[3], 1)
             self.Last = currentBlessing
+            self.Last.unitName = name
         else
             self.Duration:SetText("00:00")
 
@@ -104,8 +113,8 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
                 self:SetBackdropColor(BlessingHelper.db.profile.unbuffedColor[1], BlessingHelper.db.profile.unbuffedColor[2], BlessingHelper.db.profile.unbuffedColor[3], 1)
             end
 
-            -- Remove the last used when someone else used it on the unit
-            if self.Last and self.Last:Contains(currentBlessings, true) then
+            -- Remove the last used when someone else used it on the unit or unit changed (joined another party/party member changed)
+            if self.Last and (self.Last.unitName ~= name or self.Last:Contains(currentBlessings, false)) then
                 self.Last = nil
             end
         end
