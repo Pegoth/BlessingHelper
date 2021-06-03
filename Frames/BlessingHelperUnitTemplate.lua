@@ -103,6 +103,7 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
             self.Duration:SetText(string.format("%02.0f:%02.0f", m, s))
             self:SetBackdropColor(BlessingHelper.db.profile.buffedColor[1], BlessingHelper.db.profile.buffedColor[2], BlessingHelper.db.profile.buffedColor[3], 1)
             self.Last = currentBlessing
+            self.Last.unitName = name
         else
             self.Duration:SetText("00:00")
 
@@ -113,7 +114,7 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
             end
 
             -- Remove the last used when someone else used it on the unit or unit changed (joined another party/party member changed)
-            if self.Last and (self.Name:GetText() ~= name or self.Last:Contains(currentBlessings, true)) then
+            if self.Last and (self.Last.unitName ~= name or self.Last:Contains(currentBlessings, false)) then
                 self.Last = nil
             end
         end
