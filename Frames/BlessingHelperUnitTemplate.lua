@@ -20,7 +20,7 @@ function BlessingHelperUnitTemplate_OnLoad(self)
                     copy.isGreater = copy.greater.name == name
                     copy.duration = duration
                     copy.expirationTime = expirationTime
-                    copy.unitCaster = unitCaster:lower()
+                    copy.unitCaster = unitCaster
                     table.insert(buf, copy)
                 end
             end
