@@ -1098,11 +1098,11 @@ function BlessingHelper:SetupConfig()
                                     if self.importExport.imports.frame then
                                         self.db.profile.maximumRows = self.importExport.importData.frame.maximumRows
                                         self.db.profile.backgroundColor = self.importExport.importData.frame.backgroundColor
-                                        self.db.profile.mainFrameAnchor.point = self.importExport.importData.frame.point
-                                        self.db.profile.mainFrameAnchor.relativeFrame = self.importExport.importData.frame.relativeFrame
-                                        self.db.profile.mainFrameAnchor.relativePoint = self.importExport.importData.frame.relativePoint
-                                        self.db.profile.mainFrameAnchor.x = self.importExport.importData.frame.x
-                                        self.db.profile.mainFrameAnchor.y = self.importExport.importData.frame.y
+                                        self.db.profile.mainFrameAnchor.point = self.importExport.importData.frame.mainFrameAnchor.point
+                                        self.db.profile.mainFrameAnchor.relativeFrame = self.importExport.importData.frame.mainFrameAnchor.relativeFrame
+                                        self.db.profile.mainFrameAnchor.relativePoint = self.importExport.importData.frame.mainFrameAnchor.relativePoint
+                                        self.db.profile.mainFrameAnchor.x = self.importExport.importData.frame.mainFrameAnchor.x
+                                        self.db.profile.mainFrameAnchor.y = self.importExport.importData.frame.mainFrameAnchor.y
                                     end
 
                                     if self.importExport.imports.unit then
@@ -1146,7 +1146,10 @@ function BlessingHelper:SetupConfig()
                                         end
                                     end
 
+                                    self.importExport.text = nil
                                     self.importExport.importData = nil
+                                    self.Frame:Reposition()
+                                    self.Frame:Redraw()
                                     AddImportExport()
                                 elseif self.importExport.text ~= nil and self.importExport.text ~= "" then
                                     local success, data = aceSerializer:Deserialize(libDeflate:DecompressDeflate(libDeflate:DecodeForPrint(self.importExport.text)))

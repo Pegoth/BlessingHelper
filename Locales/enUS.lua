@@ -225,17 +225,17 @@ CreateLocale("enUS", true, {
             },
             import = {
                 name = "Import",
+                data = {
+                    name = "Data",
+                    imports = {
+                        name = "Imports",
+                        desc = "Select what datas will be imported."
+                    }
+                },
                 importAction = {
                     import = {
                         name = "Import",
-                        desc = "Imports the selected values to the current profile.\nWARNING: It will override every selected setting!",
-                        data = {
-                            name = "Data",
-                            imports = {
-                                name = "Imports",
-                                desc = "Select what datas will be imported."
-                            }
-                        },
+                        desc = "Imports the selected values to the current profile.\nWARNING: It will override every selected setting!"
                     },
                     parse = {
                         name = "Parse",
