@@ -19,9 +19,9 @@ end
 
 function BlessingHelper:SetupClasses()
     ---@class Spell
-    ---@field id integer
-    ---@field name string
-    ---@field icon integer|string
+    ---@field id integer The ID of the spell.
+    ---@field name string The name of the spell.
+    ---@field icon integer|string The icon of the spell.
     self.Spell = {}
 
     ---Creates a new spell from the given id.
@@ -49,9 +49,13 @@ function BlessingHelper:SetupClasses()
     end
 
     ---@class Blessing
-    ---@field key string
-    ---@field normal Spell
-    ---@field greater Spell
+    ---@field key string The name of the Blessing that will be used for tables.
+    ---@field normal Spell The normal version of the Blessing.
+    ---@field greater Spell The greater version of the Blessing.
+    ---@field isGreater boolean Whether the Blessing is a greater version, set only if it is on a unit.
+    ---@field duration boolean The total duration of the Blessing, set only if it is on a unit.
+    ---@field expirationTime boolean When will the Blessing expire, set only if it is on a unit.
+    ---@field unitCaster boolean The source of the Blessing, set only if it is on a unit AND that unit is from the current raid/party.
     self.Blessing = {}
 
     ---Creates a new Blessing.

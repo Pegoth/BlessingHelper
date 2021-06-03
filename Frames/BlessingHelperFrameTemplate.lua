@@ -2,10 +2,13 @@ local addon = ...
 
 -- region BlessingHelperFrame events
 function BlessingHelperFrameTemplate_OnLoad(self)
+    ---Toggles the lock state of the frame.
     function self:ToggleLock()
         self:SetLock(not BlessingHelper.db.profile.isLocked)
     end
 
+    ---Sets the lock state of the frame to the given value.
+    ---@param locked boolean Whether the frame is locked or not.
     function self:SetLock(locked)
         BlessingHelper.db.profile.isLocked = locked
 
@@ -18,6 +21,7 @@ function BlessingHelperFrameTemplate_OnLoad(self)
         self:Redraw()
     end
 
+    ---Repositions and redraws the units and the frame. Will do nothing if in combat.
     function self:Redraw()
         if InCombatLockdown() then return end
 
@@ -82,6 +86,7 @@ function BlessingHelperFrameTemplate_OnLoad(self)
         self:SetHeight(BlessingHelper.db.profile.verticalPadding + (BlessingHelper.db.profile.unitHeight + BlessingHelper.db.profile.verticalPadding) * (BlessingHelper.db.profile.isLocked and (math.min(visibleCount, BlessingHelper.db.profile.maximumRows)) or BlessingHelper.db.profile.maximumRows))
     end
 
+    ---Repositions the frame based on the position settings in the db.
     function self:Reposition()
         self:ClearAllPoints()
         self:SetPoint(
@@ -100,7 +105,11 @@ function BlessingHelperFrameTemplate_OnLoad(self)
     end
 
     self.Background:SetTexture("Interface\\Addons\\"..addon.."\\Textures\\Background")
+
+    ---Whether the frame is currently being moved or not.
     self.IsMoving = false
+
+    ---The unit frame buttons for each possible units in display priority order.
     self.Units = {}
 
     -- Create unit frames

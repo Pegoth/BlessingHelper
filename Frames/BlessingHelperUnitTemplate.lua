@@ -4,9 +4,15 @@ local media = LibStub("LibSharedMedia-3.0")
 function BlessingHelperUnitTemplate_OnLoad(self)
     BlessingHelper.CreateBackdrop(self, 0, 0, 0, 1)
 
+    ---Checks if the unit of the frame is a pet or not.
+    ---@return boolean boolean Whether the unit is pet or not.
     function self:IsPetUnit()
         return self.Unit:lower():find("pet") ~= nil
     end
+
+    ---Gets Blessings that are on the unit.
+    ---@param own nil|boolean Whether the Blessing must be from the player or not. Nil means it doesn't matter.
+    ---@return table<integer, Blessing> table<integer, Blessing> The found Blessings.
     function self:Blessings(own)
         local buf = {}
 
@@ -30,6 +36,8 @@ function BlessingHelperUnitTemplate_OnLoad(self)
 
         return buf
     end
+
+    ---Resizes and redraws the frame.
     function self:Redraw()
         self.LeftIcon:SetWidth(BlessingHelper.db.profile.unitHeight / 2)
         self.LeftIcon:SetHeight(BlessingHelper.db.profile.unitHeight)
