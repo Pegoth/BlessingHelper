@@ -104,8 +104,8 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
                 self:SetBackdropColor(BlessingHelper.db.profile.unbuffedColor[1], BlessingHelper.db.profile.unbuffedColor[2], BlessingHelper.db.profile.unbuffedColor[3], 1)
             end
 
-            -- Remove the last used when someone else used it on the unit
-            if self.Last and self.Last:Contains(currentBlessings, true) then
+            -- Remove the last used when someone else used it on the unit or unit changed (joined another party/party member changed)
+            if self.Last and (self.Name:GetText() ~= name or self.Last:Contains(currentBlessings, true)) then
                 self.Last = nil
             end
         end
