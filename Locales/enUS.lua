@@ -20,6 +20,16 @@ CreateLocale("enUS", true, {
                 name = "Maximum rows",
                 desc = "The maximum amount of units to display in a column."
             },
+            growth = {
+                name = "Growth",
+                desc = "The start position of the unit frames and the grow direction.",
+                values = {
+                    topLeftToDown = "Top left, grow downward",
+                    topRightToDown = "Top right, grow downward",
+                    bottomLeftToUp = "Bottom left, grow upward",
+                    bottomRightToUp = "Bottom right, grow upward"
+                }
+            },
             position = {
                 name = "Position",
                 point = {
