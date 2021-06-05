@@ -248,8 +248,10 @@ function BlessingHelper:SetupDB()
         profile = {
             enabled = true,
             isLocked = false,
+            showAllUnits = false,
             backgroundColor = {0, 0, 0, 0.5},
             maximumRows = 10,
+            growth = "topLeftToDown",
             unitWidth = 100,
             unitHeight = 20,
             horizontalPadding = 1,
@@ -318,6 +320,27 @@ function BlessingHelper:SetupConfig()
         name = addon,
         type = "group",
         args = {
+            showAllUnits = {
+                name = "Show all units",
+                order = 0,
+                hidden = true,
+                type = "toggle",
+                set = function (_, value)
+                    self.db.profile.showAllUnits = value
+
+                    for _, u in ipairs(self.Frame.Units) do
+                        if value then
+                            UnregisterUnitWatch(u)
+                        else
+                            RegisterUnitWatch(u)
+                        end
+                    end
+
+                    self.Frame:Reposition()
+                    self.Frame:Redraw()
+                end,
+                get = function () return self.db.profile.showAllUnits end
+            },
             enabled = {
                 name = L["config.enabled.name"],
                 desc = L["config.enabled.desc"],
@@ -365,11 +388,36 @@ function BlessingHelper:SetupConfig()
                         end,
                         get = function () return self.db.profile.maximumRows end
                     },
+                    growth = {
+                        name = L["config.frame.growth.name"],
+                        desc = L["config.frame.growth.desc"],
+                        type = "select",
+                        sorting = {
+                            "topLeftToDown",
+                            "topRightToDown",
+                            "bottomLeftToUp",
+                            "bottomRightToUp"
+                        },
+                        values = {
+                            topLeftToDown = L["config.frame.growth.values.topLeftToDown"],
+                            topRightToDown = L["config.frame.growth.values.topRightToDown"],
+                            bottomLeftToUp = L["config.frame.growth.values.bottomLeftToUp"],
+                            bottomRightToUp = L["config.frame.growth.values.bottomRightToUp"]
+                        },
+                        style = "dropdown",
+                        order = 3,
+                        set = function (_, value)
+                            self.db.profile.growth = value
+                            self.Frame:Reposition()
+                            self.Frame:Redraw()
+                        end,
+                        get = function () return self.db.profile.growth end
+                    },
                     position = {
                         name = L["config.frame.position.name"],
                         type = "group",
                         inline = true,
-                        order = 3,
+                        order = 4,
                         args = {
                             point = {
                                 name = L["config.frame.position.point.name"],

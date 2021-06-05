@@ -5,7 +5,8 @@
         "LibStub",
         "RegisterUnitWatch",
         "CLASS_SORT_ORDER",
-        "LOCALIZED_CLASS_NAMES_MALE"
+        "LOCALIZED_CLASS_NAMES_MALE",
+        "UnregisterUnitWatch"
     ],
     "Lua.diagnostics.disable": [
         "redundant-parameter"

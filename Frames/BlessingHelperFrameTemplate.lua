@@ -50,12 +50,28 @@ function BlessingHelperFrameTemplate_OnLoad(self)
                 y = BlessingHelper.db.profile.verticalPadding
             end
         end
-
+        
         local function moveAndSize(f)
             f:SetWidth(BlessingHelper.db.profile.unitWidth)
             f:SetHeight(BlessingHelper.db.profile.unitHeight)
             f:ClearAllPoints()
-            f:SetPoint("TOPLEFT", self, "TOPLEFT", x, -y)
+            local point = BlessingHelper.db.profile.growth == "topLeftToDown" and "TOPLEFT" or
+                          BlessingHelper.db.profile.growth == "bottomLeftToUp" and "BOTTOMLEFT" or
+                          BlessingHelper.db.profile.growth == "topRightToDown" and "TOPRIGHT" or
+                          BlessingHelper.db.profile.growth == "bottomRightToUp" and "BOTTOMRIGHT"
+            f:SetPoint(
+                point,
+                self,
+                point,
+                (BlessingHelper.db.profile.growth == "topLeftToDown" and 1 or
+                BlessingHelper.db.profile.growth == "bottomLeftToUp" and 1 or
+                BlessingHelper.db.profile.growth == "topRightToDown" and -1 or
+                BlessingHelper.db.profile.growth == "bottomRightToUp" and -1) * x,
+                (BlessingHelper.db.profile.growth == "topLeftToDown" and -1 or
+                BlessingHelper.db.profile.growth == "bottomLeftToUp" and 1 or
+                BlessingHelper.db.profile.growth == "topRightToDown" and -1 or
+                BlessingHelper.db.profile.growth == "bottomRightToUp" and 1) * y
+            )
             f:Redraw()
         end
 
@@ -63,7 +79,7 @@ function BlessingHelperFrameTemplate_OnLoad(self)
         local visibleCount = 0
         local hiddens = {}
         for _, f in ipairs(self.Units) do
-            if not UnitExists(f.Unit) then
+            if not UnitExists(f.Unit) and not BlessingHelper.db.profile.showAllUnits then
                 f:Hide()
                 table.insert(hiddens, f)
             else
@@ -103,7 +119,7 @@ function BlessingHelperFrameTemplate_OnLoad(self)
 
     ---Repositions the frame based on the position settings in the db. If 
     function self:Reposition()
-        if BlessingHelper.db.profile.mainFrameAnchor.relativeFrame ~= nil and _G[BlessingHelper.db.profile.mainFrameAnchor.relativeFrame] == nil then
+        if InCombatLockdown() or BlessingHelper.db.profile.mainFrameAnchor.relativeFrame ~= nil and _G[BlessingHelper.db.profile.mainFrameAnchor.relativeFrame] == nil then
             return
         end
 
@@ -139,7 +155,11 @@ function BlessingHelperFrameTemplate_OnLoad(self)
             f.Weight = weight
             f.Unit = unit.id..(unit.max and i or "")
             f:SetAttribute("unit", f.Unit)
-            RegisterUnitWatch(f)
+
+            if not BlessingHelper.db.profile.showAllUnits then
+                RegisterUnitWatch(f)
+            end
+
             table.insert(self.Units, f)
             weight = weight + 1
         end
