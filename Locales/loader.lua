@@ -1,4 +1,4 @@
-local addon = ...
+local addonName, addon = ...
 
 local function transform(L, key, value)
     if type(value) == "table" then
@@ -10,13 +10,13 @@ local function transform(L, key, value)
     end
 end
 
-function CreateLocale(language, default, translations)
+function addon:CreateLocale(language, default, translations)
     if translations == nil then
         translations = default
         default = nil
     end
 
-    local L = LibStub:GetLibrary("AceLocale-3.0"):NewLocale(addon, language, default)
+    local L = LibStub:GetLibrary("AceLocale-3.0"):NewLocale(addonName, language, default)
     if L then
         transform(L, nil, translations)
     end

@@ -1,0 +1,7 @@
+<Ui>
+    <Script file="main.lua"/>
+    <Script file="frame.lua"/>
+    <Script file="units.lua"/>
+    <Script file="help.lua"/>
+    <Script file="priorities.lua"/>
+</Ui>

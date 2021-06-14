@@ -265,6 +265,15 @@ function BlessingHelper:SetupDB()
             unbuffedColor = {1, 0, 0},
             unbuffedPetColor = {0.5, 0, 0},
             outOfRangeColor = {0.1, 0.1, 0.1},
+            priorities = {
+                ["*"] = {
+                    enabled = true
+                }
+            },
+            priorityConfig = {
+                useGreater = true,
+                keys = {}
+            },
             spells = {
                 useGreater = true,
                 ["*"] = {}
@@ -296,6 +305,10 @@ function BlessingHelper:SetupDB()
     }
 
     for priority, blessing in ipairs(self.Blessings) do
+        defaults.profile.priorities["*"][blessing.key] = {
+            enabled = true,
+            priority = priority
+        }
         defaults.profile.spells["*"][blessing.key] = {
             enabled = true,
             priority = priority

@@ -1,0 +1,4 @@
+<Ui>
+    <Script file="Locales\loader.lua"/>
+    <Script file="Locales\enUS.lua"/>
+</Ui>

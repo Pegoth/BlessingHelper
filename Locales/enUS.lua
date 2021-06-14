@@ -1,6 +1,6 @@
-local addon = ...
+local addonName, addon = ...
 
-CreateLocale("enUS", true, {
+addon:CreateLocale("enUS", true, {
     config = {
         enabled = {
             name = "Enabled",
@@ -136,6 +136,66 @@ CreateLocale("enUS", true, {
                 }
             }
         },
+        priorities = {
+            name = "Priorities",
+            useGreater = {
+                name = "Use Greater blessings",
+                desc = "When checked will cast Greater Blessing of ... instead of Blessing of ..."
+            },
+            special = {
+                name = "Special",
+                reset = {
+                    name = "Reset",
+                    desc = "Removes every custom priority and resets the default one."
+                }
+            },
+            add = {
+                name = "Add",
+                type = {
+                    name = "Type",
+                    desc = "The type of the new priority that will be added.",
+                    values = {
+                        name = "Name",
+                        class = "Class"
+                    }
+                },
+                unitName = {
+                    name = "Name",
+                    desc = "The name of the character."
+                },
+                getTargetName = {
+                    name = "Get target",
+                    desc = "Gets the name of the current target or the player if no target."
+                },
+                add = {
+                    name = "Add",
+                    desc = "Adds a new override with the current name."
+                }
+            },
+            default = {
+                name = "Default"
+            },
+            priority = {
+                blessing = {
+                    enabled = {
+                        name = "Enabled",
+                        desc = "Whether the Blessing is allowed."
+                    },
+                    priority = {
+                        name = "Priority",
+                        desc = "The priority of the Blessing, lower number means it will be sooner selected to be cast on the unit."
+                    },
+                    up = {
+                        name = "Up",
+                        desc = "Moves the Blessing one priority higher."
+                    },
+                    down = {
+                        name = "Down",
+                        desc = "Moves the Blessing one priority lower."
+                    }
+                }
+            }
+        },
         spells = {
             name = "Spells",
             useGreater = {
@@ -258,12 +318,12 @@ CreateLocale("enUS", true, {
                 name = "Export",
                 exports = {
                     name = "Exports",
-                    desc = "\124cffffff00"..addon.."\124r: Select what datas will be exported."
+                    desc = "\124cffffff00"..addonName.."\124r: Select what datas will be exported."
                 },
                 generate = {
                     name = "Generate",
                     desc = "Generates the export text.",
-                    error = "\124cffffff00"..addon.."\124r: Please select at least one thing to export."
+                    error = "\124cffffff00"..addonName.."\124r: Please select at least one thing to export."
                 }
             },
             values = {
@@ -307,7 +367,7 @@ CreateLocale("enUS", true, {
         toggle = "Toggle"
     },
     minimap = {
-        incombat = "\124cffffff00"..addon.."\124r: Cannot show settings or toggle frame in combat.",
+        incombat = "\124cffffff00"..addonName.."\124r: Cannot show settings or toggle frame in combat.",
         leftclick = "\124cffffffffLeft click:\124r Toggle addon",
         rightclick = "\124cffffffffRight click:\124r Show settings"
     }
