@@ -169,11 +169,11 @@ function BlessingHelper:SetupConstants()
     --- The existing Blessings.
     self.Blessings = {
         self.Blessing:New("Kings", 20217, 25898),
-        self.Blessing:New("Wisdom", 25290, 25918),
+        self.Blessing:New("Wisdom", 27142, 27143),
         self.Blessing:New("Might", 25291, 25916),
-        self.Blessing:New("Light", 19979, 25890),
-        self.Blessing:New("Salvation", 1038, 25895),
-        self.Blessing:New("Sanctuary", 20914, 25899)
+        --self.Blessing:New("Light", 0, 0),
+        --self.Blessing:New("Salvation", 0, 0),
+        self.Blessing:New("Sanctuary", 20911, 25899)
     }
 
     --- The Blessing to use for checking range
