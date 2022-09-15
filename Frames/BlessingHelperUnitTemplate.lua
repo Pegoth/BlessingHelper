@@ -4,10 +4,52 @@ local media = LibStub("LibSharedMedia-3.0")
 function BlessingHelperUnitTemplate_OnLoad(self)
     BlessingHelper.CreateBackdrop(self, 0, 0, 0, 1)
 
+    ---Checks whether the unit is active (exists and not party or player unit when in raid).
+    ---@return boolean boolean Whether the unit is active or not.
+    function self:IsActive()
+        return UnitExists(self.Unit) and (not IsInRaid() or not self:IsPlayerUnit() and not self:IsPartyUnit())
+    end
+
     ---Checks if the unit of the frame is a pet or not.
     ---@return boolean boolean Whether the unit is pet or not.
     function self:IsPetUnit()
         return self.Unit:lower():find("pet") ~= nil
+    end
+
+    ---Checks if the unit of the frame is the player or not.
+    ---@return boolean boolean Whether the unit is the player or not.
+    function self:IsPlayerUnit()
+        return self.Unit:lower() == "player"
+    end
+
+    ---Checks if the unit of the frame is party or not.
+    ---@return boolean boolean Whether the unit is party or not.
+    function self:IsPartyUnit()
+        return self.Unit:lower():find("party") ~= nil
+    end
+
+    ---Checks if the unit of the frame is raid or not.
+    ---@return boolean boolean Whether the unit is raid or not.
+    function self:IsRaidUnit()
+        return self.Unit:lower():find("raid") ~= nil
+    end
+
+    --Registers/Unregisters frame with RegisterAttributeDriver/RegisterUnitWatch based on state.
+    function self:UpdateUnitWatch()
+        if BlessingHelper.db.profile.showAllUnits then
+            if self:IsPlayerUnit() or self:IsPartyUnit() then
+                UnregisterAttributeDriver(self, "state-visibility")
+            else
+                UnregisterUnitWatch(self)
+            end
+            self:Show()
+        else
+            if self:IsPlayerUnit() or self:IsPartyUnit() then
+                RegisterAttributeDriver(self, "state-visibility", "[@" .. self.Unit .. ",exists,nogroup:raid]show;hide")
+            else
+                RegisterUnitWatch(self)
+            end
+        end
     end
 
     ---Gets Blessings that are on the unit.
@@ -59,19 +101,22 @@ function BlessingHelperUnitTemplate_OnUpdate(self, elapsed)
     if self.TimeSinceLastUpdate > 0.1 then
         self.TimeSinceLastUpdate = 0
 
+        -- Do nothing special if unit does not exists
+        if not self:IsActive() then
+            self.Name:SetText(self.Unit)
+            self.LeftIcon:Hide()
+            self.RightIcon:Hide()
+            self.Duration:SetText("")
+            self:SetBackdropColor(0, 0, 0, 1)
+            return
+        end
+
         -- Update unit name
         local name = UnitName(self.Unit) or self.Unit
         if BlessingHelper.db.profile.unitLength <= 0 then
             self.Name:SetText("")
         else
             self.Name:SetText(name:sub(1, BlessingHelper.db.profile.unitLength))
-        end
-
-        -- Do nothing special if unit does not exists
-        if not UnitExists(self.Unit) then
-            self.Duration:SetText("00:00")
-            self:SetBackdropColor(0, 0, 0, 1)
-            return
         end
 
         -- Do nothing special if not in range

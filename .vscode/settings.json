@@ -3,12 +3,15 @@
     "Lua.diagnostics.globals": [
         "InfinitySearch",
         "LibStub",
-        "RegisterUnitWatch",
         "CLASS_SORT_ORDER",
         "LOCALIZED_CLASS_NAMES_MALE",
-        "UnregisterUnitWatch"
+        "RegisterUnitWatch",
+        "UnregisterUnitWatch",
+        "RegisterAttributeDriver",
+        "UnregisterAttributeDriver"
     ],
     "Lua.diagnostics.disable": [
         "redundant-parameter"
-    ]
+    ],
+    "BlessingHelperWoWDirectory": "D:\\World of Warcraft\\_classic_\\Interface\\AddOns\\BlessingHelper"
 }

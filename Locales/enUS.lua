@@ -10,6 +10,10 @@ CreateLocale("enUS", true, {
             name = "Locked",
             desc = "Whether the moving/resizing frame is shown or not."
         },
+        showAllUnits = {
+            name = "Test mode",
+            desc = "When enabled even frames with non-existing units will be shown for test purposes."
+        },
         frame = {
             name= "Frame settings",
             backgroundColor = {

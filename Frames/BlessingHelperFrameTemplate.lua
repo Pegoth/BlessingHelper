@@ -50,7 +50,7 @@ function BlessingHelperFrameTemplate_OnLoad(self)
                 y = BlessingHelper.db.profile.verticalPadding
             end
         end
-        
+
         local function moveAndSize(f)
             f:SetWidth(BlessingHelper.db.profile.unitWidth)
             f:SetHeight(BlessingHelper.db.profile.unitHeight)
@@ -79,21 +79,31 @@ function BlessingHelperFrameTemplate_OnLoad(self)
         local visibleCount = 0
         local hiddens = {}
         for _, f in ipairs(self.Units) do
-            if not UnitExists(f.Unit) and not BlessingHelper.db.profile.showAllUnits then
-                f:Hide()
-                table.insert(hiddens, f)
-            else
+            if f:IsActive() then
                 visibleCount = visibleCount + 1
-                f:Show()
                 moveAndSize(f)
                 next(visibleCount)
+            else
+                table.insert(hiddens, f)
             end
         end
 
-        -- Order by weight (pets first)
+        -- Order by pets first, they get dismissed and summoned mid-combat, then if in raid pet/player last, then by weight
+        local isInRaid = IsInRaid()
         table.sort(hiddens, function (a, b)
-            local apet = a.Unit:find("pet") ~= nil
-            local bpet = a.Unit:find("pet") ~= nil
+            local apet = a:IsPetUnit()
+            local bpet = b:IsPetUnit()
+
+            if isInRaid then
+                local araid = a:IsRaidUnit()
+                local braid = b:IsRaidUnit()
+
+                if araid and not braid then
+                    return true
+                elseif not araid and braid then
+                    return false
+                end
+            end
 
             if apet and not bpet then
                 return true
@@ -112,12 +122,16 @@ function BlessingHelperFrameTemplate_OnLoad(self)
             next(invisibleCount)
         end
 
+        if BlessingHelper.db.profile.showAllUnits then
+            visibleCount = invisibleCount
+        end
+
         self.Background:SetColorTexture(BlessingHelper.db.profile.backgroundColor[1], BlessingHelper.db.profile.backgroundColor[2], BlessingHelper.db.profile.backgroundColor[3], BlessingHelper.db.profile.backgroundColor[4])
-        self:SetWidth(BlessingHelper.db.profile.horizontalPadding + (BlessingHelper.db.profile.unitWidth + BlessingHelper.db.profile.horizontalPadding) * math.ceil((BlessingHelper.db.profile.isLocked and visibleCount or BlessingHelper.NumUnitIds) / BlessingHelper.db.profile.maximumRows))
-        self:SetHeight(BlessingHelper.db.profile.verticalPadding + (BlessingHelper.db.profile.unitHeight + BlessingHelper.db.profile.verticalPadding) * (BlessingHelper.db.profile.isLocked and (math.min(visibleCount, BlessingHelper.db.profile.maximumRows)) or BlessingHelper.db.profile.maximumRows))
+        self:SetWidth(BlessingHelper.db.profile.horizontalPadding + (BlessingHelper.db.profile.unitWidth + BlessingHelper.db.profile.horizontalPadding) * math.ceil(visibleCount / BlessingHelper.db.profile.maximumRows))
+        self:SetHeight(BlessingHelper.db.profile.verticalPadding + (BlessingHelper.db.profile.unitHeight + BlessingHelper.db.profile.verticalPadding) * math.min(visibleCount, BlessingHelper.db.profile.maximumRows))
     end
 
-    ---Repositions the frame based on the position settings in the db. If 
+    ---Repositions the frame based on the position settings in the db.
     function self:Reposition()
         if InCombatLockdown() or BlessingHelper.db.profile.mainFrameAnchor.relativeFrame ~= nil and _G[BlessingHelper.db.profile.mainFrameAnchor.relativeFrame] == nil then
             return
@@ -131,6 +145,14 @@ function BlessingHelperFrameTemplate_OnLoad(self)
             BlessingHelper.db.profile.mainFrameAnchor.x,
             BlessingHelper.db.profile.mainFrameAnchor.y
         )
+    end
+
+    --Calls Redraw and Reposition after a short delay.
+    function self:DelayedUpdate()
+        C_Timer.After(0.1, function()
+            self:Reposition()
+            self:Redraw()
+        end)
     end
 
     if BlessingHelper.db.profile.isLocked then
@@ -155,18 +177,14 @@ function BlessingHelperFrameTemplate_OnLoad(self)
             f.Weight = weight
             f.Unit = unit.id..(unit.max and i or "")
             f:SetAttribute("unit", f.Unit)
-
-            if not BlessingHelper.db.profile.showAllUnits then
-                RegisterUnitWatch(f)
-            end
+            f:UpdateUnitWatch()
 
             table.insert(self.Units, f)
             weight = weight + 1
         end
     end
 
-    self:Reposition()
-    self:Redraw()
+    self:DelayedUpdate()
 
     self:RegisterEvent("GROUP_ROSTER_UPDATE")
     self:RegisterEvent("UNIT_PET")
@@ -175,19 +193,24 @@ function BlessingHelperFrameTemplate_OnLoad(self)
     self:RegisterEvent("PLAYER_ENTERING_WORLD")
     self:RegisterEvent("PLAYER_LOGIN")
 
-    BlessingHelper.db.RegisterCallback(BlessingHelper, "OnProfileChanged", function ()
-        self:Reposition()
-        self:Redraw()
+    BlessingHelper.db.RegisterCallback(BlessingHelper, "OnProfileChanged", function()
+        for _, f in ipairs(self.Units) do
+            f:UpdateUnitWatch()
+        end
+
+        self:DelayedUpdate()
     end)
-    BlessingHelper.db.RegisterCallback(BlessingHelper, "OnProfileReset", function ()
-        self:Reposition()
-        self:Redraw()
+    BlessingHelper.db.RegisterCallback(BlessingHelper, "OnProfileReset", function()
+        for _, f in ipairs(self.Units) do
+            f:UpdateUnitWatch()
+        end
+
+        self:DelayedUpdate()
     end)
 end
 
 function BlessingHelperFrameTemplate_OnEvent(self)
-    self:Reposition()
-    self:Redraw()
+    self:DelayedUpdate()
 end
 
 function BlessingHelperFrameTemplate_OnMouseDown(self, button)

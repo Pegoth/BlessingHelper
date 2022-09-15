@@ -154,9 +154,6 @@ function BlessingHelper:SetupConstants()
             max = 40
         },
         {
-            id = "pet"
-        },
-        {
             id = "partypet",
             max = 4
         },
@@ -320,27 +317,6 @@ function BlessingHelper:SetupConfig()
         name = addon,
         type = "group",
         args = {
-            showAllUnits = {
-                name = "Show all units",
-                order = 0,
-                hidden = true,
-                type = "toggle",
-                set = function (_, value)
-                    self.db.profile.showAllUnits = value
-
-                    for _, u in ipairs(self.Frame.Units) do
-                        if value then
-                            UnregisterUnitWatch(u)
-                        else
-                            RegisterUnitWatch(u)
-                        end
-                    end
-
-                    self.Frame:Reposition()
-                    self.Frame:Redraw()
-                end,
-                get = function () return self.db.profile.showAllUnits end
-            },
             enabled = {
                 name = L["config.enabled.name"],
                 desc = L["config.enabled.desc"],
@@ -357,10 +333,26 @@ function BlessingHelper:SetupConfig()
                 set = function (_, value) self.Frame:SetLock(value) end,
                 get = function () return self.db.profile.isLocked end
             },
+            showAllUnits = {
+                name = L["config.showAllUnits.name"],
+                desc = L["config.showAllUnits.desc"],
+                order = 3,
+                type = "toggle",
+                set = function (_, value)
+                    self.db.profile.showAllUnits = value
+
+                    for _, f in ipairs(self.Frame.Units) do
+                        f:UpdateUnitWatch()
+                    end
+
+                    self.Frame:DelayedUpdate()
+                end,
+                get = function () return self.db.profile.showAllUnits end
+            },
             frame = {
                 name = L["config.frame.name"],
                 type = "group",
-                order = 3,
+                order = 4,
                 args = {
                     backgroundColor = {
                         name = L["config.frame.backgroundColor.name"],
@@ -514,7 +506,7 @@ function BlessingHelper:SetupConfig()
             units = {
                 name = L["config.units.name"],
                 type = "group",
-                order = 4,
+                order = 5,
                 args = {
                     size = {
                         name = L["config.units.size.name"],

@@ -1,0 +1,20 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "copy-to-wow",
+            "type": "shell",
+            "command": "if (Test-Path '${config:BlessingHelperWoWDirectory}') { Remove-Item -Force -Recurse '${config:BlessingHelperWoWDirectory}' }; New-Item -ItemType 'directory' '${config:BlessingHelperWoWDirectory}'; Copy-Item -Path (Get-ChildItem -Path '${workspaceFolder}' -Exclude ('.git', '.vscode')).FullName -Destination '${config:BlessingHelperWoWDirectory}' -Recurse -Force",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "close": true
+            }
+        },
+    ]
+}
